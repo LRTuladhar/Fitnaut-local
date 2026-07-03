@@ -1,0 +1,653 @@
+{
+  "exercises": [
+    {
+      "name": "Squat",
+      "alternateNames": ["squats", "back squat", "back squats", "barbell squat", "barbell squats"],
+      "type": "strength",
+      "muscleGroups": ["legs", "glutes", "core"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Front Squat",
+      "alternateNames": ["front squats", "front squat"],
+      "type": "strength",
+      "muscleGroups": ["legs", "glutes", "core"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Goblet Squat",
+      "alternateNames": ["goblet squats"],
+      "type": "strength",
+      "muscleGroups": ["legs", "glutes", "core"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Deadlift",
+      "alternateNames": ["deadlifts", "conventional deadlift", "barbell deadlift"],
+      "type": "strength",
+      "muscleGroups": ["back", "legs", "glutes", "core"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Romanian Deadlift",
+      "alternateNames": ["rdl", "romanian deadlifts", "rdls"],
+      "type": "strength",
+      "muscleGroups": ["back", "legs", "glutes"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Sumo Deadlift",
+      "alternateNames": ["sumo deadlifts"],
+      "type": "strength",
+      "muscleGroups": ["back", "legs", "glutes", "core"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Bench Press",
+      "alternateNames": ["bench", "barbell bench", "bench press", "barbell bench press"],
+      "type": "strength",
+      "muscleGroups": ["chest", "shoulders", "arms"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Incline Bench Press",
+      "alternateNames": ["incline bench", "incline barbell bench"],
+      "type": "strength",
+      "muscleGroups": ["chest", "shoulders", "arms"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Decline Bench Press",
+      "alternateNames": ["decline bench", "decline barbell bench"],
+      "type": "strength",
+      "muscleGroups": ["chest", "arms"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Dumbbell Bench Press",
+      "alternateNames": ["dumbbell bench", "db bench press", "db bench"],
+      "type": "strength",
+      "muscleGroups": ["chest", "shoulders", "arms"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Overhead Press",
+      "alternateNames": ["ohp", "shoulder press", "military press", "barbell overhead press", "standing press"],
+      "type": "strength",
+      "muscleGroups": ["shoulders", "arms", "core"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Dumbbell Shoulder Press",
+      "alternateNames": ["dumbbell press", "db shoulder press", "seated dumbbell press"],
+      "type": "strength",
+      "muscleGroups": ["shoulders", "arms"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Barbell Row",
+      "alternateNames": ["bent over row", "barbell rows", "bent-over row", "pendlay row"],
+      "type": "strength",
+      "muscleGroups": ["back", "arms"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Dumbbell Row",
+      "alternateNames": ["db row", "dumbbell rows", "single arm row", "one arm row"],
+      "type": "strength",
+      "muscleGroups": ["back", "arms"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Pull-up",
+      "alternateNames": ["pullup", "pullups", "pull ups", "pull-ups"],
+      "type": "strength",
+      "muscleGroups": ["back", "arms"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Chin-up",
+      "alternateNames": ["chinup", "chinups", "chin ups", "chin-ups"],
+      "type": "strength",
+      "muscleGroups": ["back", "arms"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Lat Pulldown",
+      "alternateNames": ["lat pull down", "lat pulldowns", "pulldown"],
+      "type": "strength",
+      "muscleGroups": ["back", "arms"],
+      "category": "isolation",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Dip",
+      "alternateNames": ["dips", "chest dips", "tricep dips"],
+      "type": "strength",
+      "muscleGroups": ["chest", "arms"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Lunge",
+      "alternateNames": ["lunges", "walking lunges", "forward lunges"],
+      "type": "strength",
+      "muscleGroups": ["legs", "glutes"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Bulgarian Split Squat",
+      "alternateNames": ["bulgarian squat", "split squat", "rear foot elevated split squat"],
+      "type": "strength",
+      "muscleGroups": ["legs", "glutes"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Leg Press",
+      "alternateNames": ["leg press machine"],
+      "type": "strength",
+      "muscleGroups": ["legs", "glutes"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Leg Extension",
+      "alternateNames": ["leg extensions", "quad extension"],
+      "type": "strength",
+      "muscleGroups": ["legs"],
+      "category": "isolation",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Leg Curl",
+      "alternateNames": ["leg curls", "hamstring curl", "lying leg curl", "seated leg curl"],
+      "type": "strength",
+      "muscleGroups": ["legs"],
+      "category": "isolation",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Calf Raise",
+      "alternateNames": ["calf raises", "standing calf raise", "seated calf raise"],
+      "type": "strength",
+      "muscleGroups": ["legs"],
+      "category": "isolation",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Hip Thrust",
+      "alternateNames": ["hip thrusts", "barbell hip thrust", "glute bridge"],
+      "type": "strength",
+      "muscleGroups": ["glutes", "legs"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Bicep Curl",
+      "alternateNames": ["biceps curl", "barbell curl", "curls", "bicep curls"],
+      "type": "strength",
+      "muscleGroups": ["arms"],
+      "category": "isolation",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Dumbbell Curl",
+      "alternateNames": ["db curl", "dumbbell curls", "alternating curls", "hammer curl"],
+      "type": "strength",
+      "muscleGroups": ["arms"],
+      "category": "isolation",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Preacher Curl",
+      "alternateNames": ["preacher curls"],
+      "type": "strength",
+      "muscleGroups": ["arms"],
+      "category": "isolation",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Tricep Extension",
+      "alternateNames": ["triceps extension", "overhead tricep extension", "skull crusher", "lying tricep extension"],
+      "type": "strength",
+      "muscleGroups": ["arms"],
+      "category": "isolation",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Tricep Pushdown",
+      "alternateNames": ["triceps pushdown", "cable pushdown", "rope pushdown"],
+      "type": "strength",
+      "muscleGroups": ["arms"],
+      "category": "isolation",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Lateral Raise",
+      "alternateNames": ["lateral raises", "side raise", "dumbbell lateral raise"],
+      "type": "strength",
+      "muscleGroups": ["shoulders"],
+      "category": "isolation",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Front Raise",
+      "alternateNames": ["front raises", "dumbbell front raise"],
+      "type": "strength",
+      "muscleGroups": ["shoulders"],
+      "category": "isolation",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Rear Delt Fly",
+      "alternateNames": ["rear delt flys", "reverse fly", "rear delt raise", "bent over fly"],
+      "type": "strength",
+      "muscleGroups": ["shoulders", "back"],
+      "category": "isolation",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Face Pull",
+      "alternateNames": ["face pulls", "cable face pull"],
+      "type": "strength",
+      "muscleGroups": ["shoulders", "back"],
+      "category": "isolation",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Shrug",
+      "alternateNames": ["shrugs", "barbell shrug", "dumbbell shrug", "trap shrug"],
+      "type": "strength",
+      "muscleGroups": ["back", "shoulders"],
+      "category": "isolation",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Chest Fly",
+      "alternateNames": ["chest flys", "dumbbell fly", "cable fly", "pec fly"],
+      "type": "strength",
+      "muscleGroups": ["chest"],
+      "category": "isolation",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Cable Crossover",
+      "alternateNames": ["cable crossovers", "cable cross"],
+      "type": "strength",
+      "muscleGroups": ["chest"],
+      "category": "isolation",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Push-up",
+      "alternateNames": ["pushup", "pushups", "push ups", "push-ups"],
+      "type": "strength",
+      "muscleGroups": ["chest", "arms", "shoulders"],
+      "category": "compound",
+      "expectedParameters": ["reps"]
+    },
+    {
+      "name": "Plank",
+      "alternateNames": ["planks", "front plank"],
+      "type": "strength",
+      "muscleGroups": ["core"],
+      "category": "isolation",
+      "expectedParameters": ["duration"]
+    },
+    {
+      "name": "Side Plank",
+      "alternateNames": ["side planks"],
+      "type": "strength",
+      "muscleGroups": ["core"],
+      "category": "isolation",
+      "expectedParameters": ["duration"]
+    },
+    {
+      "name": "Sit-up",
+      "alternateNames": ["situp", "situps", "sit ups", "sit-ups"],
+      "type": "strength",
+      "muscleGroups": ["core"],
+      "category": "isolation",
+      "expectedParameters": ["reps"]
+    },
+    {
+      "name": "Crunch",
+      "alternateNames": ["crunches", "ab crunch"],
+      "type": "strength",
+      "muscleGroups": ["core"],
+      "category": "isolation",
+      "expectedParameters": ["reps"]
+    },
+    {
+      "name": "Russian Twist",
+      "alternateNames": ["russian twists"],
+      "type": "strength",
+      "muscleGroups": ["core"],
+      "category": "isolation",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Hanging Leg Raise",
+      "alternateNames": ["leg raise", "hanging leg raises", "leg raises"],
+      "type": "strength",
+      "muscleGroups": ["core"],
+      "category": "isolation",
+      "expectedParameters": ["reps"]
+    },
+    {
+      "name": "Cable Crunch",
+      "alternateNames": ["cable crunches", "kneeling cable crunch"],
+      "type": "strength",
+      "muscleGroups": ["core"],
+      "category": "isolation",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Running",
+      "alternateNames": ["run", "jog", "jogging", "treadmill"],
+      "type": "cardio",
+      "muscleGroups": ["legs", "fullBody"],
+      "category": null,
+      "expectedParameters": ["distance", "duration"]
+    },
+    {
+      "name": "Swimming",
+      "alternateNames": ["swim"],
+      "type": "cardio",
+      "muscleGroups": ["fullBody"],
+      "category": null,
+      "expectedParameters": ["distance", "duration"],
+      "variations": ["freestyle", "backstroke", "breaststroke", "butterfly"]
+    },
+    {
+      "name": "Cycling",
+      "alternateNames": ["bike", "biking", "bicycle", "cycling", "stationary bike", "spin"],
+      "type": "cardio",
+      "muscleGroups": ["legs"],
+      "category": null,
+      "expectedParameters": ["distance", "duration"]
+    },
+    {
+      "name": "Rowing",
+      "alternateNames": ["row machine", "rowing machine", "erg", "rower"],
+      "type": "cardio",
+      "muscleGroups": ["fullBody", "back", "legs"],
+      "category": null,
+      "expectedParameters": ["distance", "duration"]
+    },
+    {
+      "name": "Elliptical",
+      "alternateNames": ["elliptical machine"],
+      "type": "cardio",
+      "muscleGroups": ["fullBody", "legs"],
+      "category": null,
+      "expectedParameters": ["distance", "duration"]
+    },
+    {
+      "name": "Stair Climber",
+      "alternateNames": ["stair stepper", "stairmaster", "stair machine"],
+      "type": "cardio",
+      "muscleGroups": ["legs", "glutes"],
+      "category": null,
+      "expectedParameters": ["duration"]
+    },
+    {
+      "name": "Jump Rope",
+      "alternateNames": ["jumping rope", "skipping", "skip rope", "rope jumping"],
+      "type": "cardio",
+      "muscleGroups": ["fullBody", "legs"],
+      "category": null,
+      "expectedParameters": ["duration", "reps"]
+    },
+    {
+      "name": "Walking",
+      "alternateNames": ["walk", "walks"],
+      "type": "cardio",
+      "muscleGroups": ["legs"],
+      "category": null,
+      "expectedParameters": ["distance", "duration"]
+    },
+    {
+      "name": "Hiking",
+      "alternateNames": ["hike"],
+      "type": "cardio",
+      "muscleGroups": ["legs", "fullBody"],
+      "category": null,
+      "expectedParameters": ["distance", "duration"]
+    },
+    {
+      "name": "Burpee",
+      "alternateNames": ["burpees"],
+      "type": "cardio",
+      "muscleGroups": ["fullBody"],
+      "category": null,
+      "expectedParameters": ["reps", "duration"]
+    },
+    {
+      "name": "Mountain Climber",
+      "alternateNames": ["mountain climbers"],
+      "type": "cardio",
+      "muscleGroups": ["fullBody", "core"],
+      "category": null,
+      "expectedParameters": ["reps", "duration"]
+    },
+    {
+      "name": "Box Jump",
+      "alternateNames": ["box jumps", "jump box"],
+      "type": "cardio",
+      "muscleGroups": ["legs", "glutes"],
+      "category": null,
+      "expectedParameters": ["reps"]
+    },
+    {
+      "name": "Yoga",
+      "alternateNames": ["yoga session", "yoga class"],
+      "type": "flexibility",
+      "muscleGroups": ["fullBody"],
+      "category": null,
+      "expectedParameters": ["duration"]
+    },
+    {
+      "name": "Stretching",
+      "alternateNames": ["stretch", "stretches"],
+      "type": "flexibility",
+      "muscleGroups": ["fullBody"],
+      "category": null,
+      "expectedParameters": ["duration"]
+    },
+    {
+      "name": "Pilates",
+      "alternateNames": ["pilates class"],
+      "type": "flexibility",
+      "muscleGroups": ["fullBody", "core"],
+      "category": null,
+      "expectedParameters": ["duration"]
+    },
+    {
+      "name": "Foam Rolling",
+      "alternateNames": ["foam roll", "rolling"],
+      "type": "flexibility",
+      "muscleGroups": ["fullBody"],
+      "category": null,
+      "expectedParameters": ["duration"]
+    },
+    {
+      "name": "Basketball",
+      "alternateNames": ["basketball game", "hoops"],
+      "type": "sports",
+      "muscleGroups": ["fullBody", "legs"],
+      "category": null,
+      "expectedParameters": ["duration"]
+    },
+    {
+      "name": "Soccer",
+      "alternateNames": ["football", "soccer game"],
+      "type": "sports",
+      "muscleGroups": ["fullBody", "legs"],
+      "category": null,
+      "expectedParameters": ["duration"]
+    },
+    {
+      "name": "Tennis",
+      "alternateNames": ["tennis match"],
+      "type": "sports",
+      "muscleGroups": ["fullBody", "arms"],
+      "category": null,
+      "expectedParameters": ["duration"]
+    },
+    {
+      "name": "Boxing",
+      "alternateNames": ["boxing training", "boxing workout", "heavy bag"],
+      "type": "sports",
+      "muscleGroups": ["fullBody", "arms", "core"],
+      "category": null,
+      "expectedParameters": ["duration"]
+    },
+    {
+      "name": "Martial Arts",
+      "alternateNames": ["mma", "kickboxing", "karate", "jiu jitsu"],
+      "type": "sports",
+      "muscleGroups": ["fullBody"],
+      "category": null,
+      "expectedParameters": ["duration"]
+    },
+    {
+      "name": "Rock Climbing",
+      "alternateNames": ["climbing", "bouldering"],
+      "type": "sports",
+      "muscleGroups": ["fullBody", "arms", "back"],
+      "category": null,
+      "expectedParameters": ["duration"]
+    },
+    {
+      "name": "CrossFit",
+      "alternateNames": ["crossfit workout", "wod", "workout of the day"],
+      "type": "sports",
+      "muscleGroups": ["fullBody"],
+      "category": null,
+      "expectedParameters": ["duration"]
+    },
+    {
+      "name": "Farmers Walk",
+      "alternateNames": ["farmers carry", "farmer carry", "farmers walks"],
+      "type": "strength",
+      "muscleGroups": ["fullBody", "core", "arms"],
+      "category": "compound",
+      "expectedParameters": ["distance", "weight", "duration"]
+    },
+    {
+      "name": "Sled Push",
+      "alternateNames": ["sled pushes", "prowler push"],
+      "type": "strength",
+      "muscleGroups": ["legs", "fullBody"],
+      "category": "compound",
+      "expectedParameters": ["distance", "weight", "duration"]
+    },
+    {
+      "name": "Sled Pull",
+      "alternateNames": ["sled pulls", "prowler pull"],
+      "type": "strength",
+      "muscleGroups": ["legs", "back", "fullBody"],
+      "category": "compound",
+      "expectedParameters": ["distance", "weight", "duration"]
+    },
+    {
+      "name": "Kettlebell Swing",
+      "alternateNames": ["kettlebell swings", "kb swing", "kb swings"],
+      "type": "strength",
+      "muscleGroups": ["glutes", "legs", "back", "core"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Turkish Get-up",
+      "alternateNames": ["turkish getup", "tgu", "get-up", "getup"],
+      "type": "strength",
+      "muscleGroups": ["fullBody", "core", "shoulders"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Clean",
+      "alternateNames": ["power clean", "hang clean", "barbell clean"],
+      "type": "strength",
+      "muscleGroups": ["fullBody", "legs", "back", "shoulders"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Snatch",
+      "alternateNames": ["power snatch", "hang snatch", "barbell snatch"],
+      "type": "strength",
+      "muscleGroups": ["fullBody", "legs", "back", "shoulders"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Thruster",
+      "alternateNames": ["thrusters", "squat press"],
+      "type": "strength",
+      "muscleGroups": ["fullBody", "legs", "shoulders"],
+      "category": "compound",
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Wall Ball",
+      "alternateNames": ["wall balls", "wall ball shot"],
+      "type": "cardio",
+      "muscleGroups": ["fullBody", "legs"],
+      "category": null,
+      "expectedParameters": ["reps", "weight"]
+    },
+    {
+      "name": "Golf Round",
+      "alternateNames": ["golf", "golfing", "golf game", "playing golf", "round of golf"],
+      "type": "sports",
+      "muscleGroups": ["fullBody", "core"],
+      "category": null,
+      "expectedParameters": ["duration"]
+    },
+    {
+      "name": "Golf Driving Range",
+      "alternateNames": ["driving range", "golf practice", "hitting balls", "range"],
+      "type": "sports",
+      "muscleGroups": ["core", "arms"],
+      "category": null,
+      "expectedParameters": ["duration"]
+    },
+    {
+      "name": "Pickleball",
+      "alternateNames": ["pickleball game", "pickle ball"],
+      "type": "sports",
+      "muscleGroups": ["fullBody", "legs", "arms"],
+      "category": null,
+      "expectedParameters": ["duration"]
+    },
+    {
+      "name": "Snowboarding",
+      "alternateNames": ["snowboard", "snowboarding session"],
+      "type": "sports",
+      "muscleGroups": ["fullBody", "legs", "core"],
+      "category": null,
+      "expectedParameters": ["duration"]
+    }
+  ]
+}

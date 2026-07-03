@@ -1,0 +1,429 @@
+openapi: 3.1.0
+info:
+  title: Fitnaut API
+  description: Local REST API for the Fitnaut fitness tracker. Used by the Hermes/Telegram agent for data entry and recommendations.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local Fitnaut server
+
+security:
+  - bearerAuth: []
+
+paths:
+  /exercises:
+    get:
+      summary: Get exercise history
+      operationId: getExercises
+      parameters:
+        - name: from
+          in: query
+          schema: { type: string, format: date-time }
+          description: Start timestamp (ISO)
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
+          description: End timestamp (ISO)
+        - name: limit
+          in: query
+          schema: { type: integer }
+          description: Max results to return
+        - name: order
+          in: query
+          schema: { type: string, enum: [asc, desc] }
+          description: Sort order (default desc)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Exercise" }
+    post:
+      summary: Log a new exercise set
+      operationId: logExercise
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [exercise_name]
+              properties:
+                exercise_name:
+                  type: string
+                  description: Name of the exercise (must match library)
+                  example: "Bench Press"
+                reps:
+                  type: integer
+                  example: 10
+                weight_lbs:
+                  type: number
+                  description: Weight in pounds (auto-converted to kg)
+                  example: 135
+                distance_miles:
+                  type: number
+                  description: Distance in miles (auto-converted to meters)
+                duration_s:
+                  type: number
+                  description: Duration in seconds
+                notes:
+                  type: string
+                timestamp:
+                  type: string
+                  format: date-time
+                  description: ISO timestamp (defaults to now)
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  data: { $ref: "#/components/schemas/Exercise" }
+
+  /exercises/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    put:
+      summary: Update an exercise set
+      operationId: updateExercise
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reps: { type: integer, nullable: true }
+                weight_lbs: { type: number, nullable: true }
+                weight_kg: { type: number, nullable: true }
+                distance_miles: { type: number, nullable: true }
+                distance_m: { type: number, nullable: true }
+                duration_s: { type: number, nullable: true }
+                notes: { type: string, nullable: true }
+      responses:
+        "200":
+          description: Updated
+    delete:
+      summary: Delete an exercise set
+      operationId: deleteExercise
+      responses:
+        "200":
+          description: Deleted
+
+  /health-metrics:
+    get:
+      summary: Get health metrics history
+      operationId: getHealthMetrics
+      parameters:
+        - name: from
+          in: query
+          schema: { type: string, format: date }
+          description: Start date (YYYY-MM-DD)
+        - name: to
+          in: query
+          schema: { type: string, format: date }
+          description: End date (YYYY-MM-DD)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/HealthMetric" }
+    post:
+      summary: Log/update health metrics for a date
+      operationId: logHealthMetric
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [date]
+              properties:
+                date:
+                  type: string
+                  format: date
+                  description: Date in YYYY-MM-DD
+                  example: "2026-06-30"
+                weight_lbs:
+                  type: number
+                  description: Weight in pounds
+                  example: 185
+                heart_rate:
+                  type: integer
+                  description: Heart rate in bpm
+                  example: 62
+                systolic_bp:
+                  type: integer
+                  example: 120
+                diastolic_bp:
+                  type: integer
+                  example: 80
+                notes:
+                  type: string
+      responses:
+        "200":
+          description: Saved
+
+  /sessions:
+    get:
+      summary: Get workout sessions
+      description: Exercises are grouped into sessions by time gap (default 3 hours).
+      operationId: getSessions
+      parameters:
+        - name: from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
+        - name: limit
+          in: query
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Session" }
+
+  /exercise-library:
+    get:
+      summary: Get the full exercise library
+      description: Returns all 66 exercises with metadata (type, muscle groups, category, expected parameters).
+      operationId: getExerciseLibrary
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ExerciseDefinition" }
+
+  /recommend:
+    post:
+      summary: Get AI workout recommendations
+      description: Uses configured AI provider (OpenRouter or Anthropic) to suggest exercises based on profile and history.
+      operationId: getRecommendations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                provider:
+                  type: string
+                  enum: [openrouter, anthropic]
+                  default: openrouter
+                comment:
+                  type: string
+                  description: Optional guidance for the AI (e.g., "Focus on upper body today")
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      workoutSummary:
+                        type: string
+                        description: AI-generated summary of the recommendation
+                      recommendations:
+                        type: array
+                        items: { $ref: "#/components/schemas/Recommendation" }
+        "400":
+          description: AI provider API key not configured
+        "502":
+          description: AI provider request failed
+
+  /profile:
+    get:
+      summary: Get user profile
+      operationId: getProfile
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  data:
+                    $ref: "#/components/schemas/UserProfile"
+                    nullable: true
+    put:
+      summary: Update user profile
+      operationId: updateProfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                year_of_birth: { type: integer }
+                gender: { type: string }
+                fitness_goals:
+                  type: array
+                  items: { type: string }
+      responses:
+        "200":
+          description: Updated
+
+  /preferences:
+    get:
+      summary: Get user preferences
+      operationId: getPreferences
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  data:
+                    $ref: "#/components/schemas/UserPreferences"
+                    nullable: true
+    put:
+      summary: Update user preferences
+      operationId: updatePreferences
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                weight_unit: { type: string, enum: [lbs, kg] }
+                distance_unit: { type: string, enum: [mi, m, km] }
+                session_gap_seconds: { type: integer }
+                default_time_range: { type: string, enum: [week, month, year, all] }
+                ai_provider: { type: string, enum: [openrouter, anthropic] }
+                openrouter_model: { type: string }
+      responses:
+        "200":
+          description: Updated
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key from FITNAUT_API_KEY environment variable
+
+  schemas:
+    Exercise:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        user_id: { type: string }
+        timestamp: { type: string, format: date-time }
+        exercise_definition_id: { type: string }
+        exercise_name: { type: string }
+        reps: { type: integer, nullable: true }
+        weight_kg: { type: number, nullable: true }
+        distance_m: { type: number, nullable: true }
+        duration_s: { type: number, nullable: true }
+        notes: { type: string, nullable: true }
+        session_id: { type: string, nullable: true }
+
+    HealthMetric:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        user_id: { type: string }
+        date: { type: string, format: date }
+        weight_kg: { type: number, nullable: true }
+        heart_rate: { type: integer, nullable: true }
+        systolic_bp: { type: integer, nullable: true }
+        diastolic_bp: { type: integer, nullable: true }
+        notes: { type: string, nullable: true }
+
+    Session:
+      type: object
+      properties:
+        id: { type: string }
+        startTime: { type: string, format: date-time }
+        endTime: { type: string, format: date-time }
+        exerciseCount: { type: integer }
+        exercises:
+          type: array
+          items: { $ref: "#/components/schemas/Exercise" }
+
+    ExerciseDefinition:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        alternate_names: { type: array, items: { type: string } }
+        type: { type: string, enum: [strength, cardio, flexibility, sports] }
+        muscle_groups: { type: array, items: { type: string } }
+        category: { type: string, nullable: true }
+        expected_parameters: { type: array, items: { type: string } }
+
+    Recommendation:
+      type: object
+      properties:
+        exerciseName: { type: string }
+        sets: { type: integer }
+        reps: { type: integer }
+        weightLbs: { type: number }
+        reasoning: { type: string }
+        matchedName: { type: string }
+
+    UserProfile:
+      type: object
+      properties:
+        user_id: { type: string }
+        name: { type: string, nullable: true }
+        year_of_birth: { type: integer, nullable: true }
+        gender: { type: string, nullable: true }
+        fitness_goals: { type: string }
+
+    UserPreferences:
+      type: object
+      properties:
+        user_id: { type: string }
+        weight_unit: { type: string }
+        distance_unit: { type: string }
+        session_gap_seconds: { type: integer }
+        default_time_range: { type: string }
+        ai_provider: { type: string }
+        openrouter_model: { type: string, nullable: true }
