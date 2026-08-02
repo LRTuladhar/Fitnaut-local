@@ -30,7 +30,7 @@ export interface PersonalRecord {
 
 const TYPE_COLORS: Record<string, string> = {
   strength: "#3b82f6",
-  cardio: "#ef4444",
+  cardio: "#f59e0b",
   flexibility: "#a855f7",
   sports: "#22c55e",
 };
