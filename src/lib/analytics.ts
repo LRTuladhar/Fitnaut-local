@@ -46,6 +46,7 @@ export const BODY_PARTS: BodyPartDef[] = [
   { id: "quads", label: "Quads", abbr: "Quad", side: "front" },
   { id: "hamstrings", label: "Hamstrings", abbr: "Hams", side: "back" },
   { id: "calves", label: "Calves", abbr: "Calf", side: "back" },
+  { id: "forearms", label: "Forearms", abbr: "Frm", side: "both" },
 ];
 
 const TYPE_COLORS: Record<string, string> = {

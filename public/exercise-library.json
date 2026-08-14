@@ -637,7 +637,9 @@
         "reps",
         "weight"
       ],
-      "bodyParts": []
+      "bodyParts": [
+        "forearms"
+      ]
     },
     {
       "name": "Tricep Extension",
@@ -1450,7 +1452,8 @@
       "bodyParts": [
         "back",
         "shoulders",
-        "abs"
+        "abs",
+        "forearms"
       ]
     },
     {

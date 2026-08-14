@@ -20,6 +20,10 @@ const FRONT_REGIONS: Record<string, Shape[]> = {
     { k: "rect", x: 25, y: 60, w: 11, h: 42, r: 5.5 },
     { k: "rect", x: 84, y: 60, w: 11, h: 42, r: 5.5 },
   ],
+  forearms: [
+    { k: "rect", x: 25, y: 103, w: 11, h: 10, r: 5 },
+    { k: "rect", x: 84, y: 103, w: 11, h: 10, r: 5 },
+  ],
   quads: [
     { k: "rect", x: 43, y: 116, w: 14, h: 46, r: 7 },
     { k: "rect", x: 63, y: 116, w: 14, h: 46, r: 7 },
@@ -35,6 +39,10 @@ const BACK_REGIONS: Record<string, Shape[]> = {
   triceps: [
     { k: "rect", x: 25, y: 60, w: 11, h: 42, r: 5.5 },
     { k: "rect", x: 84, y: 60, w: 11, h: 42, r: 5.5 },
+  ],
+  forearms: [
+    { k: "rect", x: 25, y: 103, w: 11, h: 10, r: 5 },
+    { k: "rect", x: 84, y: 103, w: 11, h: 10, r: 5 },
   ],
   glutes: [
     { k: "ellipse", cx: 48, cy: 120, rx: 10, ry: 8 },
