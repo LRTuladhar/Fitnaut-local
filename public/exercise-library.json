@@ -623,6 +623,23 @@
       ]
     },
     {
+      "name": "Wrist Curl",
+      "alternateNames": [
+        "wrist curls",
+        "wrist curl"
+      ],
+      "type": "strength",
+      "muscleGroups": [
+        "arms"
+      ],
+      "category": "isolation",
+      "expectedParameters": [
+        "reps",
+        "weight"
+      ],
+      "bodyParts": []
+    },
+    {
       "name": "Tricep Extension",
       "alternateNames": [
         "triceps extension",
@@ -688,6 +705,46 @@
       "alternateNames": [
         "front raises",
         "dumbbell front raise"
+      ],
+      "type": "strength",
+      "muscleGroups": [
+        "shoulders"
+      ],
+      "category": "isolation",
+      "expectedParameters": [
+        "reps",
+        "weight"
+      ],
+      "bodyParts": [
+        "shoulders"
+      ]
+    },
+    {
+      "name": "Shoulder Rotation Internal",
+      "alternateNames": [
+        "internal shoulder rotation",
+        "internal rotation",
+        "shoulder internal rotation"
+      ],
+      "type": "strength",
+      "muscleGroups": [
+        "shoulders"
+      ],
+      "category": "isolation",
+      "expectedParameters": [
+        "reps",
+        "weight"
+      ],
+      "bodyParts": [
+        "shoulders"
+      ]
+    },
+    {
+      "name": "Shoulder Rotation External",
+      "alternateNames": [
+        "external shoulder rotation",
+        "external rotation",
+        "shoulder external rotation"
       ],
       "type": "strength",
       "muscleGroups": [
