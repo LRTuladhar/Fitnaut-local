@@ -10,7 +10,8 @@ import BodyMap from "./BodyMap";
 
 const DAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
-const COLUMN_WIDTH = 30;
+const ACTIVE_COLUMN_WIDTH = 22;
+const EMPTY_COLUMN_WIDTH = 6;
 const MAX_DAYS = 120;
 
 const FRONT_COLOR = "#22c55e";
@@ -58,6 +59,36 @@ export default function MuscleFocusTimeline({ exercises, definitions }: Props) {
 
   const partsByDay = useMemo(() => getBodyPartsByDay(exercises, definitions), [exercises, definitions]);
 
+  const dayWidths = useMemo(() => {
+    return days.map((date) => {
+      const parts = partsByDay.get(toDateKey(date));
+      return parts && parts.size > 0 ? ACTIVE_COLUMN_WIDTH : EMPTY_COLUMN_WIDTH;
+    });
+  }, [days, partsByDay]);
+
+  const prefix = useMemo(() => {
+    const p = new Array(MAX_DAYS + 1);
+    p[0] = 0;
+    for (let i = 0; i < MAX_DAYS; i++) p[i + 1] = p[i] + dayWidths[i];
+    return p;
+  }, [dayWidths]);
+
+  const totalWidth = prefix[MAX_DAYS];
+
+  const indexAtOffset = useCallback(
+    (offset: number) => {
+      let lo = 0;
+      let hi = MAX_DAYS;
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (prefix[mid] <= offset) lo = mid + 1;
+        else hi = mid;
+      }
+      return Math.max(0, lo - 1);
+    },
+    [prefix]
+  );
+
   const [selectedPart, setSelectedPart] = useState<string | null>(null);
 
   const [visibleStartIdx, setVisibleStartIdx] = useState(0);
@@ -76,12 +107,11 @@ export default function MuscleFocusTimeline({ exercises, definitions }: Props) {
     const raf = requestAnimationFrame(scrollToToday);
 
     const updateVisibility = () => {
-      const firstVisible = Math.floor(el.scrollLeft / COLUMN_WIDTH);
-      const visibleCount = Math.ceil(el.clientWidth / COLUMN_WIDTH);
-      const lastVisible = Math.min(firstVisible + visibleCount, MAX_DAYS - 1);
+      const firstVisible = indexAtOffset(el.scrollLeft);
+      const lastVisible = indexAtOffset(el.scrollLeft + el.clientWidth);
 
       setVisibleStartIdx(Math.max(0, firstVisible));
-      setVisibleEndIdx(lastVisible);
+      setVisibleEndIdx(Math.min(lastVisible, MAX_DAYS - 1));
       setCanScrollBack(el.scrollLeft > 1);
       setCanScrollForward(el.scrollLeft < el.scrollWidth - el.clientWidth - 1);
     };
@@ -93,7 +123,7 @@ export default function MuscleFocusTimeline({ exercises, definitions }: Props) {
       cancelAnimationFrame(raf);
       el.removeEventListener("scroll", updateVisibility);
     };
-  }, []);
+  }, [indexAtOffset]);
 
   const scrollPage = useCallback((direction: "back" | "forward") => {
     const el = scrollRef.current;
@@ -136,13 +166,13 @@ export default function MuscleFocusTimeline({ exercises, definitions }: Props) {
                   : "bg-secondary border-border text-muted-foreground hover:text-foreground"
               }`}
             >
-              {part.label}
+              {part.abbr ?? part.label}
             </button>
           );
         })}
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 -mx-4">
         <button
           onClick={() => scrollPage("back")}
           disabled={!canScrollBack}
@@ -159,26 +189,31 @@ export default function MuscleFocusTimeline({ exercises, definitions }: Props) {
           className="flex-1 overflow-x-auto"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
-          <div className="flex" style={{ width: MAX_DAYS * COLUMN_WIDTH }}>
-            {days.map((date) => {
+          <div className="flex" style={{ width: totalWidth }}>
+            {days.map((date, i) => {
               const key = toDateKey(date);
               const parts = partsByDay.get(key);
               const activeParts = parts ? [...parts] : [];
+              const hasParts = activeParts.length > 0;
 
               return (
                 <button
                   key={key}
                   onClick={() => handleDayClick(date)}
-                  className="flex flex-col items-center gap-1 py-1 rounded-lg hover:bg-secondary/50 transition-colors"
-                  style={{ width: COLUMN_WIDTH }}
+                  className="flex flex-col items-center justify-end gap-1 pb-1 rounded-lg hover:bg-secondary/50 transition-colors"
+                  style={{ width: dayWidths[i] }}
                 >
-                  <div className="flex flex-col items-center gap-0.5">
-                    <BodyMap view="front" activeParts={activeParts} selectedPart={selectedPart} highlight={FRONT_COLOR} selectedColor={SELECTED_COLOR} className="w-6 h-auto" />
-                    <BodyMap view="back" activeParts={activeParts} selectedPart={selectedPart} highlight={BACK_COLOR} selectedColor={SELECTED_COLOR} className="w-6 h-auto" />
-                  </div>
-                  <span className="text-[10px] text-muted-foreground font-medium">
-                    {DAY_LABELS[date.getDay()]}
-                  </span>
+                  {hasParts && (
+                    <div className="flex flex-col items-center gap-0.5">
+                      <BodyMap view="front" activeParts={activeParts} selectedPart={selectedPart} highlight={FRONT_COLOR} selectedColor={SELECTED_COLOR} className="w-4 h-auto" />
+                      <BodyMap view="back" activeParts={activeParts} selectedPart={selectedPart} highlight={BACK_COLOR} selectedColor={SELECTED_COLOR} className="w-4 h-auto" />
+                    </div>
+                  )}
+                  {hasParts && (
+                    <span className="text-[10px] text-muted-foreground font-medium leading-none">
+                      {DAY_LABELS[date.getDay()]}
+                    </span>
+                  )}
                 </button>
               );
             })}

@@ -31,20 +31,21 @@ export interface PersonalRecord {
 export interface BodyPartDef {
   id: string;
   label: string;
+  abbr?: string;
   side: "front" | "back" | "both";
 }
 
 export const BODY_PARTS: BodyPartDef[] = [
   { id: "chest", label: "Chest", side: "front" },
   { id: "abs", label: "Abs", side: "front" },
-  { id: "shoulders", label: "Shoulders", side: "both" },
-  { id: "biceps", label: "Biceps", side: "front" },
-  { id: "triceps", label: "Triceps", side: "back" },
+  { id: "shoulders", label: "Shoulders", abbr: "Shldr", side: "both" },
+  { id: "biceps", label: "Biceps", abbr: "Bicep", side: "front" },
+  { id: "triceps", label: "Triceps", abbr: "Tricep", side: "back" },
   { id: "back", label: "Back", side: "back" },
-  { id: "glutes", label: "Glutes", side: "back" },
-  { id: "quads", label: "Quads", side: "front" },
-  { id: "hamstrings", label: "Hamstrings", side: "back" },
-  { id: "calves", label: "Calves", side: "back" },
+  { id: "glutes", label: "Glutes", abbr: "Glute", side: "back" },
+  { id: "quads", label: "Quads", abbr: "Quad", side: "front" },
+  { id: "hamstrings", label: "Hamstrings", abbr: "Hams", side: "back" },
+  { id: "calves", label: "Calves", abbr: "Calf", side: "back" },
 ];
 
 const TYPE_COLORS: Record<string, string> = {
