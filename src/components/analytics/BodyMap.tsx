@@ -74,7 +74,7 @@ export default function BodyMap({
   const visible = BODY_PARTS.filter((p) => p.side === view || p.side === "both").map((p) => p.id);
 
   return (
-    <svg viewBox="0 0 120 220" className={className} role="img" aria-label={view === "front" ? "Front body" : "Back body"}>
+    <svg viewBox="23 7 74 196" className={className} role="img" aria-label={view === "front" ? "Front body" : "Back body"}>
       <g fill={muted}>
         <ellipse cx="60" cy="24" rx="13" ry="16" />
         <rect x="55" y="37" width="10" height="12" rx="4" />

@@ -169,10 +169,10 @@ export default function MuscleFocusTimeline({ exercises, definitions }: Props) {
                 <button
                   key={key}
                   onClick={() => handleDayClick(date)}
-                  className="flex flex-col items-center gap-1.5 py-1.5 rounded-lg hover:bg-secondary/50 transition-colors"
+                  className="flex flex-col items-center gap-1 py-1 rounded-lg hover:bg-secondary/50 transition-colors"
                   style={{ width: COLUMN_WIDTH }}
                 >
-                  <div className="flex flex-col items-center gap-1">
+                  <div className="flex flex-col items-center gap-0.5">
                     <BodyMap view="front" activeParts={activeParts} selectedPart={selectedPart} highlight={FRONT_COLOR} selectedColor={SELECTED_COLOR} className="w-6 h-auto" />
                     <BodyMap view="back" activeParts={activeParts} selectedPart={selectedPart} highlight={BACK_COLOR} selectedColor={SELECTED_COLOR} className="w-6 h-auto" />
                   </div>
