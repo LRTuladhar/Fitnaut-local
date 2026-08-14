@@ -10,7 +10,7 @@ import BodyMap from "./BodyMap";
 
 const DAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
-const COLUMN_WIDTH = 44;
+const COLUMN_WIDTH = 30;
 const MAX_DAYS = 120;
 
 const FRONT_COLOR = "#22c55e";
@@ -159,7 +159,7 @@ export default function MuscleFocusTimeline({ exercises, definitions }: Props) {
           className="flex-1 overflow-x-auto"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
-          <div className="flex gap-1" style={{ width: MAX_DAYS * COLUMN_WIDTH }}>
+          <div className="flex" style={{ width: MAX_DAYS * COLUMN_WIDTH }}>
             {days.map((date) => {
               const key = toDateKey(date);
               const parts = partsByDay.get(key);
@@ -173,8 +173,8 @@ export default function MuscleFocusTimeline({ exercises, definitions }: Props) {
                   style={{ width: COLUMN_WIDTH }}
                 >
                   <div className="flex flex-col items-center gap-1">
-                    <BodyMap view="front" activeParts={activeParts} selectedPart={selectedPart} highlight={FRONT_COLOR} selectedColor={SELECTED_COLOR} className="w-8 h-auto" />
-                    <BodyMap view="back" activeParts={activeParts} selectedPart={selectedPart} highlight={BACK_COLOR} selectedColor={SELECTED_COLOR} className="w-8 h-auto" />
+                    <BodyMap view="front" activeParts={activeParts} selectedPart={selectedPart} highlight={FRONT_COLOR} selectedColor={SELECTED_COLOR} className="w-6 h-auto" />
+                    <BodyMap view="back" activeParts={activeParts} selectedPart={selectedPart} highlight={BACK_COLOR} selectedColor={SELECTED_COLOR} className="w-6 h-auto" />
                   </div>
                   <span className="text-[10px] text-muted-foreground font-medium">
                     {DAY_LABELS[date.getDay()]}
