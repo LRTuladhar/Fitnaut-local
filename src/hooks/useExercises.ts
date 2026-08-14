@@ -23,6 +23,7 @@ export function useExerciseDefinitions() {
         alternate_names: e.alternateNames ?? [],
         type: e.type,
         muscle_groups: e.muscleGroups ?? [],
+        body_parts: e.bodyParts ?? [],
         category: e.category ?? "",
         expected_parameters: e.expectedParameters ?? [],
       }));

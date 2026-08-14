@@ -28,6 +28,25 @@ export interface PersonalRecord {
   weight_lbs: number;
 }
 
+export interface BodyPartDef {
+  id: string;
+  label: string;
+  side: "front" | "back" | "both";
+}
+
+export const BODY_PARTS: BodyPartDef[] = [
+  { id: "chest", label: "Chest", side: "front" },
+  { id: "abs", label: "Abs", side: "front" },
+  { id: "shoulders", label: "Shoulders", side: "both" },
+  { id: "biceps", label: "Biceps", side: "front" },
+  { id: "triceps", label: "Triceps", side: "back" },
+  { id: "back", label: "Back", side: "back" },
+  { id: "glutes", label: "Glutes", side: "back" },
+  { id: "quads", label: "Quads", side: "front" },
+  { id: "hamstrings", label: "Hamstrings", side: "back" },
+  { id: "calves", label: "Calves", side: "back" },
+];
+
 const TYPE_COLORS: Record<string, string> = {
   strength: "#3b82f6",
   cardio: "#f59e0b",
@@ -85,6 +104,26 @@ export function getMuscleGroupActivity(
   return [...counts.entries()]
     .sort((a, b) => b[1] - a[1])
     .map(([group, count]) => ({ group, count }));
+}
+
+export function getBodyPartsByDay(
+  exercises: ExerciseRow[],
+  definitions: { id: string; name: string; type: string; body_parts?: string[] }[]
+): Map<string, Set<string>> {
+  const defMap = new Map(definitions.map((d) => [d.name.toLowerCase(), d]));
+  const map = new Map<string, Set<string>>();
+  for (const ex of exercises) {
+    const def = defMap.get((ex.exercise_name ?? "").toLowerCase());
+    if (!def || def.type !== "strength") continue;
+    const parts = def.body_parts ?? [];
+    if (parts.length === 0) continue;
+    const d = new Date(ex.timestamp);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    if (!map.has(key)) map.set(key, new Set());
+    const set = map.get(key)!;
+    for (const part of parts) set.add(part);
+  }
+  return map;
 }
 
 export function getTopExercises(

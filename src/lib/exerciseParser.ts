@@ -4,6 +4,7 @@ export interface ExerciseDefinition {
   alternate_names: string[];
   type: string;
   muscle_groups: string[];
+  body_parts: string[];
   category: string;
   expected_parameters: string[];
 }
