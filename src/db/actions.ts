@@ -247,3 +247,60 @@ export async function upsertUserApiKey(
 export async function getExerciseDefinitions() {
   return db.select().from(schema.exerciseDefinitions).all();
 }
+
+// ─── Meals ────────────────────────────────────────────────────────────────────
+
+export async function getMeals(
+  userId: string,
+  opts?: { from?: string; to?: string; order?: "asc" | "desc" }
+) {
+  const conditions = [eq(schema.meals.user_id, userId)];
+  if (opts?.from) conditions.push(gte(schema.meals.timestamp, opts.from));
+  if (opts?.to) conditions.push(lte(schema.meals.timestamp, opts.to));
+
+  return db
+    .select()
+    .from(schema.meals)
+    .where(and(...conditions))
+    .orderBy(
+      opts?.order === "asc"
+        ? asc(schema.meals.timestamp)
+        : desc(schema.meals.timestamp)
+    )
+    .all();
+}
+
+export async function insertMeal(input: {
+  userId: string;
+  description: string;
+  calories: number;
+  mealType?: string | null;
+  carbsG?: number | null;
+  proteinG?: number | null;
+  fatG?: number | null;
+  fiberG?: number | null;
+  sugarG?: number | null;
+  timestamp?: string;
+}) {
+  return db
+    .insert(schema.meals)
+    .values({
+      id: crypto.randomUUID(),
+      user_id: input.userId,
+      meal_type: input.mealType ?? null,
+      description: input.description,
+      calories: input.calories,
+      carbs_g: input.carbsG ?? null,
+      protein_g: input.proteinG ?? null,
+      fat_g: input.fatG ?? null,
+      fiber_g: input.fiberG ?? null,
+      sugar_g: input.sugarG ?? null,
+      timestamp: input.timestamp ?? new Date().toISOString(),
+    })
+    .returning()
+    .get();
+}
+
+export async function deleteMeal(id: string) {
+  db.delete(schema.meals).where(eq(schema.meals.id, id)).run();
+}

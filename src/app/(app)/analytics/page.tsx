@@ -22,6 +22,8 @@ import { Trophy, BarChart2 } from "lucide-react";
 import WorkoutCalendar from "@/components/analytics/WorkoutCalendar";
 import ExerciseTimeline from "@/components/analytics/ExerciseTimeline";
 import MuscleFocusTimeline from "@/components/analytics/MuscleFocusTimeline";
+import CalorieTimeline from "@/components/analytics/CalorieTimeline";
+import NutritionTimeline from "@/components/analytics/NutritionTimeline";
 import { PageSkeleton } from "@/components/ui/skeleton";
 
 type Range = "week" | "month" | "year" | "all";
@@ -68,6 +70,12 @@ export default function AnalyticsPage() {
 
         {/* Muscle focus timeline */}
         <MuscleFocusTimeline exercises={allExercises} definitions={definitions} />
+
+        {/* Calorie timeline */}
+        <CalorieTimeline />
+
+        {/* Nutrition timeline */}
+        <NutritionTimeline />
 
         {isEmpty ? (
           <EmptyState />

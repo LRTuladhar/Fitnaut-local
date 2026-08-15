@@ -8,6 +8,20 @@
       "when": 1782831788597,
       "tag": "0000_strong_sunfire",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1786832140811,
+      "tag": "0001_aromatic_crusher_hogan",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1786832474244,
+      "tag": "0002_jazzy_bloodscream",
+      "breakpoints": true
     }
   ]
 }

@@ -70,3 +70,17 @@ export const userApiKeys = sqliteTable("user_api_keys", {
   openrouter_key_encrypted: text("openrouter_key_encrypted"),
   anthropic_key_encrypted: text("anthropic_key_encrypted"),
 });
+
+export const meals = sqliteTable("meals", {
+  id: text("id").primaryKey(),
+  user_id: text("user_id").notNull(),
+  meal_type: text("meal_type"),
+  description: text("description").notNull(),
+  calories: integer("calories").notNull(),
+  carbs_g: real("carbs_g"),
+  protein_g: real("protein_g"),
+  fat_g: real("fat_g"),
+  fiber_g: real("fiber_g"),
+  sugar_g: real("sugar_g"),
+  timestamp: text("timestamp").notNull(),
+});

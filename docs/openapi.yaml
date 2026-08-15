@@ -212,6 +212,107 @@ paths:
                     type: array
                     items: { $ref: "#/components/schemas/Session" }
 
+  /meals:
+    get:
+      summary: Get logged meals
+      operationId: getMeals
+      parameters:
+        - name: from
+          in: query
+          schema: { type: string, format: date-time }
+          description: Start timestamp (ISO)
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
+          description: End timestamp (ISO)
+        - name: order
+          in: query
+          schema: { type: string, enum: [asc, desc] }
+          description: Sort order (default desc)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Meal" }
+    post:
+      summary: Log a meal
+      operationId: logMeal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [description, calories]
+              properties:
+                meal_type:
+                  type: string
+                  enum: [breakfast, lunch, snack, dinner]
+                  nullable: true
+                  description: Optional meal type
+                description:
+                  type: string
+                  description: Text describing the meal
+                  example: "In-N-Out Double Double burger"
+                calories:
+                  type: integer
+                  description: Calorie estimate
+                  example: 670
+                carbs_g:
+                  type: number
+                  description: Carbohydrates in grams
+                  example: 41
+                protein_g:
+                  type: number
+                  description: Protein in grams
+                  example: 37
+                fat_g:
+                  type: number
+                  description: Fat in grams
+                  example: 39
+                fiber_g:
+                  type: number
+                  description: Fiber in grams
+                  example: 3
+                sugar_g:
+                  type: number
+                  description: Sugar in grams
+                  example: 10
+                timestamp:
+                  type: string
+                  format: date-time
+                  description: ISO timestamp (defaults to now)
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  data: { $ref: "#/components/schemas/Meal" }
+        "400":
+          description: Invalid meal_type or missing description/calories
+    delete:
+      summary: Delete a meal by id
+      operationId: deleteMeal
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Deleted
+
   /exercise-library:
     get:
       summary: Get the full exercise library
@@ -375,6 +476,21 @@ components:
         systolic_bp: { type: integer, nullable: true }
         diastolic_bp: { type: integer, nullable: true }
         notes: { type: string, nullable: true }
+
+    Meal:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        user_id: { type: string }
+        meal_type: { type: string, enum: [breakfast, lunch, snack, dinner], nullable: true }
+        description: { type: string }
+        calories: { type: integer }
+        carbs_g: { type: number, nullable: true }
+        protein_g: { type: number, nullable: true }
+        fat_g: { type: number, nullable: true }
+        fiber_g: { type: number, nullable: true }
+        sugar_g: { type: number, nullable: true }
+        timestamp: { type: string, format: date-time }
 
     Session:
       type: object
