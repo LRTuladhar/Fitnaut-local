@@ -3,9 +3,9 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ReferenceLine } from "recharts";
 import { getMeals } from "@/db/actions";
-import { DEFAULT_USER_ID } from "@/lib/constants";
+import { DEFAULT_USER_ID, DAILY_PROTEIN_TARGET_G } from "@/lib/constants";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const COLUMN_WIDTH = 24;
@@ -260,6 +260,20 @@ export default function NutritionTimeline() {
                     strokeWidth={1.5}
                   />
                 ))}
+                {selected === "protein" && (
+                  <ReferenceLine
+                    y={DAILY_PROTEIN_TARGET_G}
+                    stroke="#facc15"
+                    strokeDasharray="4 4"
+                    ifOverflow="extendDomain"
+                    label={{
+                      value: `${DAILY_PROTEIN_TARGET_G} g`,
+                      position: "right",
+                      fill: "#facc15",
+                      fontSize: 10,
+                    }}
+                  />
+                )}
               </AreaChart>
             </div>
 

@@ -3,3 +3,6 @@ export const DEFAULT_USER_ID = process.env.NEXT_PUBLIC_DEV_USER_ID ?? "311ebe23-
 export const MEAL_TYPES = ["breakfast", "lunch", "snack", "dinner"] as const;
 
 export type MealType = (typeof MEAL_TYPES)[number];
+
+export const DAILY_CALORIE_TARGET = 2000;
+export const DAILY_PROTEIN_TARGET_G = 160;

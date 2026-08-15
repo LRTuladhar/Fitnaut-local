@@ -3,9 +3,9 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ReferenceLine } from "recharts";
 import { getMeals } from "@/db/actions";
-import { DEFAULT_USER_ID, MEAL_TYPES, type MealType } from "@/lib/constants";
+import { DEFAULT_USER_ID, MEAL_TYPES, type MealType, DAILY_CALORIE_TARGET } from "@/lib/constants";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const COLUMN_WIDTH = 24;
@@ -258,6 +258,20 @@ export default function CalorieTimeline() {
                     strokeWidth={1.5}
                   />
                 ))}
+                {selected === null && (
+                  <ReferenceLine
+                    y={DAILY_CALORIE_TARGET}
+                    stroke="#facc15"
+                    strokeDasharray="4 4"
+                    ifOverflow="extendDomain"
+                    label={{
+                      value: `${DAILY_CALORIE_TARGET} kcal`,
+                      position: "right",
+                      fill: "#facc15",
+                      fontSize: 10,
+                    }}
+                  />
+                )}
               </AreaChart>
             </div>
 
