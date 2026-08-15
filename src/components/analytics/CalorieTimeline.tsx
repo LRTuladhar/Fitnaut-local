@@ -145,7 +145,7 @@ export default function CalorieTimeline() {
       cancelAnimationFrame(raf);
       el.removeEventListener("scroll", updateVisibility);
     };
-  }, []);
+  }, [isPending]);
 
   const scrollPage = useCallback((direction: "back" | "forward") => {
     const el = scrollRef.current;
