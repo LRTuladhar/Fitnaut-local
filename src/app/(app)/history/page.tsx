@@ -1,25 +1,50 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { getExercises } from "@/db/actions";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getExercises, getMeals, deleteMeal } from "@/db/actions";
 import { DEFAULT_USER_ID } from "@/lib/constants";
 import { groupIntoSessions, type WorkoutSession } from "@/lib/sessionGrouping";
-import { useExerciseDefinitions } from "@/hooks/useExercises";
+import { useExerciseDefinitions, useDeleteExercise } from "@/hooks/useExercises";
 import { formatWeight, formatDuration, KG_TO_LBS } from "@/lib/units";
-import { Clock, Dumbbell, ChevronRight, Trash2, Pencil } from "lucide-react";
-import { useDeleteExercise } from "@/hooks/useExercises";
-import { useQueryClient } from "@tanstack/react-query";
+import { Clock, Dumbbell, ChevronRight, Trash2, Pencil, Apple, type LucideIcon } from "lucide-react";
 import ManualEntryDrawer, { type EditExercise } from "@/components/workout/ManualEntryDrawer";
-import { PageSkeleton } from "@/components/ui/skeleton";
+import { PageSkeleton, Skeleton } from "@/components/ui/skeleton";
 
 type Range = "week" | "month" | "all";
+type View = "exercises" | "meals";
 
 const RANGES: { label: string; value: Range }[] = [
   { label: "Week", value: "week" },
   { label: "Month", value: "month" },
   { label: "All", value: "all" },
 ];
+
+const VIEWS: { label: string; value: View }[] = [
+  { label: "Exercises", value: "exercises" },
+  { label: "Meals", value: "meals" },
+];
+
+const MEAL_META: Record<string, { label: string; color: string }> = {
+  breakfast: { label: "Breakfast", color: "#f59e0b" },
+  lunch: { label: "Lunch", color: "#3b82f6" },
+  snack: { label: "Snack", color: "#22c55e" },
+  dinner: { label: "Dinner", color: "#a855f7" },
+};
+
+interface MealRow {
+  id: string;
+  user_id: string;
+  meal_type: string | null;
+  description: string;
+  calories: number;
+  carbs_g: number | null;
+  protein_g: number | null;
+  fat_g: number | null;
+  fiber_g: number | null;
+  sugar_g: number | null;
+  timestamp: string;
+}
 
 function rangeStart(range: Range): Date {
   const d = new Date();
@@ -29,7 +54,7 @@ function rangeStart(range: Range): Date {
   return d;
 }
 
-function formatSessionDate(date: Date): string {
+function formatDayLabel(date: Date): string {
   const now = new Date();
   const isToday = date.toDateString() === now.toDateString();
   const yesterday = new Date(now);
@@ -48,10 +73,16 @@ function sessionDuration(session: WorkoutSession): string {
   return `${Math.floor(mins / 60)}h ${mins % 60}m`;
 }
 
+function fmtG(n: number): string {
+  return Number.isInteger(n) ? String(n) : n.toFixed(1);
+}
+
 export default function HistoryPage() {
+  const [view, setView] = useState<View>("exercises");
   const [range, setRange] = useState<Range>("month");
   const [selected, setSelected] = useState<WorkoutSession | null>(null);
   const { data: definitions = [] } = useExerciseDefinitions();
+  const queryClient = useQueryClient();
   const defMap = useMemo(
     () => Object.fromEntries(definitions.map((d) => [d.name.toLowerCase(), d])),
     [definitions]
@@ -61,6 +92,21 @@ export default function HistoryPage() {
     queryKey: ["exercises", "all"],
     queryFn: async () => {
       return getExercises(DEFAULT_USER_ID, { order: "desc" });
+    },
+  });
+
+  const { data: meals = [], isPending: mealsPending } = useQuery<MealRow[]>({
+    queryKey: ["meals", "history"],
+    queryFn: async () => {
+      return getMeals(DEFAULT_USER_ID, { order: "desc" });
+    },
+    enabled: view === "meals",
+  });
+
+  const deleteMealMutation = useMutation({
+    mutationFn: (id: string) => deleteMeal(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["meals"] });
     },
   });
 
@@ -74,14 +120,27 @@ export default function HistoryPage() {
   const grouped = useMemo(() => {
     const map = new Map<string, WorkoutSession[]>();
     for (const s of sessions) {
-      const key = formatSessionDate(s.startTime);
+      const key = formatDayLabel(s.startTime);
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(s);
     }
     return [...map.entries()];
   }, [sessions]);
 
-  if (isPending) return <PageSkeleton />;
+  const groupedMeals = useMemo(() => {
+    const start = rangeStart(range);
+    const map = new Map<string, MealRow[]>();
+    for (const m of meals) {
+      const d = new Date(m.timestamp);
+      if (d < start) continue;
+      const key = formatDayLabel(d);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(m);
+    }
+    return [...map.entries()];
+  }, [meals, range]);
+
+  if (view === "exercises" && isPending) return <PageSkeleton />;
 
   if (selected) {
     return (
@@ -97,6 +156,25 @@ export default function HistoryPage() {
     <div className="flex flex-col min-h-full">
       <div className="px-5 pt-12 pb-4">
         <h1 className="text-2xl font-bold tracking-tight">History</h1>
+      </div>
+
+      {/* View toggle */}
+      <div className="px-5 pb-4">
+        <div className="flex bg-secondary rounded-xl p-1 gap-1">
+          {VIEWS.map((v) => (
+            <button
+              key={v.value}
+              onClick={() => setView(v.value)}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
+                view === v.value
+                  ? "bg-card text-foreground shadow"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {v.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Range picker */}
@@ -118,31 +196,120 @@ export default function HistoryPage() {
         </div>
       </div>
 
-      {/* Session list */}
-      <div className="flex-1 overflow-y-auto px-5 pb-6">
-        {grouped.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <div className="space-y-6">
-            {grouped.map(([dateLabel, daySessions]) => (
-              <section key={dateLabel}>
-                <p className="text-[10px] font-semibold text-primary uppercase tracking-widest mb-2.5">
-                  {dateLabel}
-                </p>
-                <div className="space-y-3">
-                  {daySessions.map((session) => (
-                    <SessionCard
-                      key={session.id}
-                      session={session}
-                      defMap={defMap}
-                      onClick={() => setSelected(session)}
-                    />
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        )}
+      {view === "meals" ? (
+        <div className="flex-1 overflow-y-auto px-5 pb-6">
+          {mealsPending ? (
+            <div className="space-y-3">
+              {[...Array(6)].map((_, i) => (
+                <Skeleton key={i} className="h-24 rounded-2xl" />
+              ))}
+            </div>
+          ) : groupedMeals.length === 0 ? (
+            <EmptyState
+              icon={Apple}
+              iconClass="bg-orange-500/10 text-orange-400"
+              title="No Meals Yet"
+              subtitle="Log meals to see your nutrition here."
+            />
+          ) : (
+            <div className="space-y-6">
+              {groupedMeals.map(([dateLabel, dayMeals]) => (
+                <section key={dateLabel}>
+                  <p className="text-[10px] font-semibold text-primary uppercase tracking-widest mb-2.5">
+                    {dateLabel}
+                  </p>
+                  <div className="space-y-3">
+                    {dayMeals.map((meal) => (
+                      <MealCard
+                        key={meal.id}
+                        meal={meal}
+                        onDelete={(id) => deleteMealMutation.mutate(id)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto px-5 pb-6">
+          {grouped.length === 0 ? (
+            <EmptyState
+              icon={Clock}
+              iconClass="bg-green-500/10 text-green-400"
+              title="No Workouts Yet"
+              subtitle="Log exercises to see your history here."
+            />
+          ) : (
+            <div className="space-y-6">
+              {grouped.map(([dateLabel, daySessions]) => (
+                <section key={dateLabel}>
+                  <p className="text-[10px] font-semibold text-primary uppercase tracking-widest mb-2.5">
+                    {dateLabel}
+                  </p>
+                  <div className="space-y-3">
+                    {daySessions.map((session) => (
+                      <SessionCard
+                        key={session.id}
+                        session={session}
+                        defMap={defMap}
+                        onClick={() => setSelected(session)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MealCard({ meal, onDelete }: { meal: MealRow; onDelete: (id: string) => void }) {
+  const meta = MEAL_META[meal.meal_type ?? ""] ?? { label: "Other", color: "#71717a" };
+  const macros = [
+    meal.carbs_g != null ? `C ${fmtG(meal.carbs_g)}g` : null,
+    meal.protein_g != null ? `P ${fmtG(meal.protein_g)}g` : null,
+    meal.fat_g != null ? `F ${fmtG(meal.fat_g)}g` : null,
+    meal.fiber_g != null ? `Fiber ${fmtG(meal.fiber_g)}g` : null,
+    meal.sugar_g != null ? `Sugar ${fmtG(meal.sugar_g)}g` : null,
+  ].filter((x): x is string => x != null);
+
+  return (
+    <div className="bg-card border border-border rounded-2xl p-4 space-y-2">
+      <div className="flex items-center gap-2">
+        <span className="w-2.5 h-2.5 rounded-full" style={{ background: meta.color }} />
+        <span className="text-xs font-semibold">{meta.label}</span>
+        <span className="text-xs text-muted-foreground ml-auto">
+          {new Date(meal.timestamp).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+        </span>
+        <button
+          onClick={() => onDelete(meal.id)}
+          className="p-1.5 rounded-lg text-muted-foreground active:text-destructive active:bg-destructive/10 transition-colors"
+          aria-label="Delete meal"
+        >
+          <Trash2 className="w-4 h-4" strokeWidth={1.8} />
+        </button>
+      </div>
+
+      <p className="text-sm font-medium leading-snug">{meal.description}</p>
+
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="text-base font-bold">
+          {meal.calories}
+          <span className="text-xs font-normal text-muted-foreground"> kcal</span>
+        </span>
+        {macros.map((m) => (
+          <span
+            key={m}
+            className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-secondary text-muted-foreground"
+          >
+            {m}
+          </span>
+        ))}
       </div>
     </div>
   );
@@ -246,7 +413,7 @@ function SessionDetail({ session, defMap, onBack }: {
         <button onClick={onBack} className="text-xs text-muted-foreground flex items-center gap-1 mb-3">
           <ChevronRight className="w-4 h-4 rotate-180" /> History
         </button>
-        <h1 className="text-2xl font-bold">{formatSessionDate(session.startTime)}</h1>
+        <h1 className="text-2xl font-bold">{formatDayLabel(session.startTime)}</h1>
         <p className="text-xs text-muted-foreground mt-1">
           {session.startTime.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })} · {sessionDuration(session)}
         </p>
@@ -308,15 +475,20 @@ function SessionDetail({ session, defMap, onBack }: {
   );
 }
 
-function EmptyState() {
+function EmptyState({ icon: Icon, iconClass, title, subtitle }: {
+  icon: LucideIcon;
+  iconClass: string;
+  title: string;
+  subtitle: string;
+}) {
   return (
     <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
-      <div className="w-16 h-16 rounded-3xl bg-green-500/10 flex items-center justify-center">
-        <Clock className="w-8 h-8 text-green-400" strokeWidth={1.5} />
+      <div className={`w-16 h-16 rounded-3xl flex items-center justify-center ${iconClass}`}>
+        <Icon className="w-8 h-8" strokeWidth={1.5} />
       </div>
       <div>
-        <p className="font-semibold text-sm">No Workouts Yet</p>
-        <p className="text-xs text-muted-foreground mt-1">Log exercises to see your history here.</p>
+        <p className="font-semibold text-sm">{title}</p>
+        <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">{subtitle}</p>
       </div>
     </div>
   );
