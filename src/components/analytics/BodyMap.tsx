@@ -97,9 +97,17 @@ export default function BodyMap({
         if (!active.has(id)) return null;
         const shapes = regions[id];
         if (!shapes) return null;
-        const fill = id === selectedPart ? selectedColor : highlight;
+        const isSelected = id === selectedPart;
+        const isDimmed = selectedPart !== null && !isSelected;
+        const fill = isSelected ? selectedColor : isDimmed ? muted : highlight;
         return (
-          <g key={id} fill={fill}>
+          <g
+            key={id}
+            fill={fill}
+            stroke={isDimmed ? "none" : "#ffffff"}
+            strokeWidth={1}
+            vectorEffect="non-scaling-stroke"
+          >
             {shapes.map((s, i) =>
               s.k === "ellipse" ? (
                 <ellipse key={i} cx={s.cx} cy={s.cy} rx={s.rx} ry={s.ry} />

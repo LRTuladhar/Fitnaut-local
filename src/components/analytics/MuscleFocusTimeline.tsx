@@ -16,7 +16,7 @@ const MAX_DAYS = 120;
 
 const FRONT_COLOR = "#22c55e";
 const BACK_COLOR = "#3b82f6";
-const SELECTED_COLOR = "#facc15";
+const SELECTED_COLOR = "#4ade80";
 
 function toDateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -162,7 +162,7 @@ export default function MuscleFocusTimeline({ exercises, definitions }: Props) {
               onClick={() => setSelectedPart(isSelected ? null : part.id)}
               className={`px-2 py-1 rounded-full text-[11px] font-medium transition-colors border ${
                 isSelected
-                  ? "bg-yellow-400/20 border-yellow-400 text-yellow-300"
+                  ? "bg-green-400/20 border-green-400 text-green-300"
                   : "bg-secondary border-border text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -195,16 +195,19 @@ export default function MuscleFocusTimeline({ exercises, definitions }: Props) {
               const parts = partsByDay.get(key);
               const activeParts = parts ? [...parts] : [];
               const hasParts = activeParts.length > 0;
+              const hasSelected = selectedPart !== null && activeParts.includes(selectedPart);
+              const isDimmed = selectedPart !== null && !hasSelected;
 
               return (
                 <button
                   key={key}
                   onClick={() => handleDayClick(date)}
                   className="flex flex-col items-center justify-end gap-1 pb-1 rounded-lg hover:bg-secondary/50 transition-colors"
-                  style={{ width: dayWidths[i] }}
+                  style={{ width: dayWidths[i], opacity: isDimmed ? 0.4 : 1 }}
                 >
                   {hasParts && (
                     <div className="flex flex-col items-center gap-0.5">
+                      {hasSelected && <span className="w-4 h-[4px] bg-green-400 rounded-[1px]" />}
                       <BodyMap view="front" activeParts={activeParts} selectedPart={selectedPart} highlight={FRONT_COLOR} selectedColor={SELECTED_COLOR} className="w-4 h-auto" />
                       <BodyMap view="back" activeParts={activeParts} selectedPart={selectedPart} highlight={BACK_COLOR} selectedColor={SELECTED_COLOR} className="w-4 h-auto" />
                     </div>
@@ -243,9 +246,6 @@ export default function MuscleFocusTimeline({ exercises, definitions }: Props) {
           <span className="w-2 h-2 rounded-full" style={{ background: SELECTED_COLOR }} /> Selected
         </span>
       </div>
-      <p className="text-[10px] text-muted-foreground">
-        Highlighted areas show muscles trained that day. Tap a muscle above to spotlight it, tap a day for history.
-      </p>
     </div>
   );
 }

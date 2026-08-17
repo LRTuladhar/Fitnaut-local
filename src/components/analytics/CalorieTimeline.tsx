@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ReferenceLine } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ReferenceLine } from "recharts";
 import { getMeals } from "@/db/actions";
 import { DEFAULT_USER_ID, MEAL_TYPES, type MealType, DAILY_CALORIE_TARGET } from "@/lib/constants";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -54,6 +54,58 @@ function addDays(d: Date, n: number): Date {
   const r = new Date(d);
   r.setDate(r.getDate() + n);
   return r;
+}
+
+function CalorieTooltip({
+  active,
+  payload,
+  label,
+  data,
+}: {
+  active?: boolean;
+  payload?: Array<{ name?: string | number; value?: number | string; dataKey?: string | number; color?: string }>;
+  label?: string | number;
+  data: DayPoint[];
+}) {
+  if (!active || !payload || payload.length === 0 || label == null) return null;
+  const day = data.find((d) => d.date === label);
+  const total = day ? SERIES.reduce((sum, key) => sum + (day[key] || 0), 0) : 0;
+  const dateLabel = new Date(`${label}T00:00:00`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+  return (
+    <div
+      style={{
+        background: "#1c1c1e",
+        border: "none",
+        borderRadius: 8,
+        padding: "8px 10px",
+        fontSize: 12,
+        color: "#f5f5f5",
+      }}
+    >
+      <div style={{ fontWeight: 600, marginBottom: 2 }}>{dateLabel}</div>
+      <div style={{ color: "#facc15", fontWeight: 600, marginBottom: 4 }}>
+        {total} kcal total
+      </div>
+      {payload.map((p) => (
+        <div key={String(p.dataKey)} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: 2,
+              background: p.color,
+              display: "inline-block",
+            }}
+          />
+          <span>{MEAL_LABELS[p.name as SeriesKey] ?? String(p.name)}</span>
+          <span style={{ marginLeft: "auto", fontWeight: 500 }}>{p.value} kcal</span>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function CalorieTimeline() {
@@ -183,16 +235,17 @@ export default function CalorieTimeline() {
         </button>
         {SERIES.map((key) => {
           const isSelected = selected === key;
+          const color = MEAL_COLORS[key];
           return (
             <button
               key={key}
               onClick={() => setSelected(isSelected ? null : key)}
-              className={`px-2 py-1 rounded-full text-[11px] font-medium transition-colors border ${
+              className="px-2 py-1 rounded-full text-[11px] font-medium transition-colors border"
+              style={
                 isSelected
-                  ? "border-transparent text-white"
-                  : "bg-secondary border-border text-muted-foreground hover:text-foreground"
-              }`}
-              style={isSelected ? { background: MEAL_COLORS[key] } : undefined}
+                  ? { background: color, borderColor: color, color: "#fff" }
+                  : { background: `${color}1a`, borderColor: `${color}59`, color }
+              }
             >
               {MEAL_LABELS[key]}
             </button>
@@ -223,7 +276,7 @@ export default function CalorieTimeline() {
               className="flex-1 overflow-x-auto"
               style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
-              <AreaChart
+              <BarChart
                 width={MAX_DAYS * COLUMN_WIDTH}
                 height={CHART_HEIGHT}
                 data={chartData}
@@ -240,22 +293,16 @@ export default function CalorieTimeline() {
                   interval="preserveStartEnd"
                 />
                 <YAxis orientation="right" width={36} tick={{ fontSize: 10, fill: "#888" }} />
-                <Tooltip
-                  contentStyle={{ background: "#1c1c1e", border: "none", borderRadius: 8, fontSize: 12 }}
-                  formatter={(v, name) => [`${v} kcal`, MEAL_LABELS[name as SeriesKey] ?? String(name)]}
-                  labelFormatter={(v) => new Date(`${v}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                />
+                <Tooltip content={<CalorieTooltip data={chartData} />} />
                 {SERIES.filter((key) => selected === null || key === selected).map((key) => (
-                  <Area
+                  <Bar
                     key={key}
-                    type="monotone"
                     dataKey={key}
                     name={key}
                     stackId={selected === null ? "1" : undefined}
                     stroke={MEAL_COLORS[key]}
                     fill={MEAL_COLORS[key]}
-                    fillOpacity={selected !== null ? 0.35 : 0.55}
-                    strokeWidth={1.5}
+                    strokeWidth={1}
                   />
                 ))}
                 {selected === null && (
@@ -272,7 +319,7 @@ export default function CalorieTimeline() {
                     }}
                   />
                 )}
-              </AreaChart>
+              </BarChart>
             </div>
 
             <button

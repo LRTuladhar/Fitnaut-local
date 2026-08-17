@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ReferenceLine } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ReferenceLine } from "recharts";
 import { getMeals } from "@/db/actions";
 import { DEFAULT_USER_ID, DAILY_PROTEIN_TARGET_G } from "@/lib/constants";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -180,16 +180,17 @@ export default function NutritionTimeline() {
         </button>
         {NUTRIENTS.map((n) => {
           const isSelected = selected === n.key;
+          const color = n.color;
           return (
             <button
               key={n.key}
               onClick={() => setSelected(isSelected ? null : n.key)}
-              className={`px-2 py-1 rounded-full text-[11px] font-medium transition-colors border ${
+              className="px-2 py-1 rounded-full text-[11px] font-medium transition-colors border"
+              style={
                 isSelected
-                  ? "border-transparent text-white"
-                  : "bg-secondary border-border text-muted-foreground hover:text-foreground"
-              }`}
-              style={isSelected ? { background: n.color } : undefined}
+                  ? { background: color, borderColor: color, color: "#fff" }
+                  : { background: `${color}1a`, borderColor: `${color}59`, color }
+              }
             >
               {n.label}
             </button>
@@ -220,7 +221,7 @@ export default function NutritionTimeline() {
               className="flex-1 overflow-x-auto"
               style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
-              <AreaChart
+              <BarChart
                 width={MAX_DAYS * COLUMN_WIDTH}
                 height={CHART_HEIGHT}
                 data={chartData}
@@ -248,16 +249,14 @@ export default function NutritionTimeline() {
                   }
                 />
                 {NUTRIENTS.filter((n) => selected === null || n.key === selected).map((n) => (
-                  <Area
+                  <Bar
                     key={n.key}
-                    type="monotone"
                     dataKey={n.key}
                     name={n.key}
                     stackId={selected === null ? "1" : undefined}
                     stroke={n.color}
                     fill={n.color}
-                    fillOpacity={selected !== null ? 0.35 : 0.55}
-                    strokeWidth={1.5}
+                    strokeWidth={1}
                   />
                 ))}
                 {selected === "protein" && (
@@ -274,7 +273,7 @@ export default function NutritionTimeline() {
                     }}
                   />
                 )}
-              </AreaChart>
+              </BarChart>
             </div>
 
             <button
