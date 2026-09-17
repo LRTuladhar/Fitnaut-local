@@ -178,7 +178,77 @@ export async function deleteHealthMetric(id: string) {
   db.delete(schema.healthMetrics).where(eq(schema.healthMetrics.id, id)).run();
 }
 
+// ─── Day Notes ────────────────────────────────────────────────────────────────
+
+export async function getDayNotes(userId: string) {
+  return db
+    .select()
+    .from(schema.dayNotes)
+    .where(eq(schema.dayNotes.user_id, userId))
+    .orderBy(asc(schema.dayNotes.date))
+    .all();
+}
+
+export async function upsertDayNote(input: {
+  userId: string;
+  date: string;
+  note: string;
+}) {
+  const existing = db
+    .select({ id: schema.dayNotes.id })
+    .from(schema.dayNotes)
+    .where(
+      and(
+        eq(schema.dayNotes.user_id, input.userId),
+        eq(schema.dayNotes.date, input.date)
+      )
+    )
+    .get();
+
+  if (existing) {
+    return db
+      .update(schema.dayNotes)
+      .set({ note: input.note })
+      .where(eq(schema.dayNotes.id, existing.id))
+      .returning()
+      .get();
+  }
+
+  return db
+    .insert(schema.dayNotes)
+    .values({
+      id: crypto.randomUUID(),
+      user_id: input.userId,
+      date: input.date,
+      note: input.note,
+    })
+    .returning()
+    .get();
+}
+
+export async function deleteDayNoteById(id: string) {
+  db.delete(schema.dayNotes).where(eq(schema.dayNotes.id, id)).run();
+}
+
+export async function deleteDayNoteByDate(userId: string, date: string) {
+  db.delete(schema.dayNotes)
+    .where(
+      and(eq(schema.dayNotes.user_id, userId), eq(schema.dayNotes.date, date))
+    )
+    .run();
+}
+
 // ─── User Profile & Preferences ───────────────────────────────────────────────
+
+export async function listUsers() {
+  return db
+    .select({
+      user_id: schema.userProfiles.user_id,
+      name: schema.userProfiles.name,
+    })
+    .from(schema.userProfiles)
+    .all();
+}
 
 export async function getUserProfile(userId: string) {
   return db

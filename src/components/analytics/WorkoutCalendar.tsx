@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { ExerciseRow } from "@/lib/sessionGrouping";
 
@@ -9,14 +9,28 @@ interface Props {
   definitions: { id: string; name: string; type: string }[];
 }
 
-type WorkoutType = "strength" | "cardio" | "mixed" | "other";
+type BaseType = "strength" | "cardio" | "flexibility" | "sports";
 
-const TYPE_COLORS: Record<WorkoutType, { bg: string; label: string }> = {
-  strength: { bg: "bg-blue-500",   label: "Strength" },
-  cardio:   { bg: "bg-green-500",  label: "Cardio"   },
-  mixed:    { bg: "bg-orange-500", label: "Mixed"    },
-  other:    { bg: "bg-purple-500", label: "Other"    },
+const TYPE_COLORS: Record<BaseType, { bg: string; hex: string; label: string }> = {
+  strength:    { bg: "bg-blue-500",   hex: "#3b82f6", label: "Strength"    },
+  cardio:      { bg: "bg-amber-500",  hex: "#f59e0b", label: "Cardio"      },
+  flexibility: { bg: "bg-purple-500", hex: "#a855f7", label: "Flexibility" },
+  sports:      { bg: "bg-green-500",  hex: "#22c55e", label: "Sports"      },
 };
+
+const MIXED_COLOR = "#ef4444"; // fallback for a day with 3+ distinct types
+const SOLID_TYPES: BaseType[] = ["strength", "cardio", "flexibility", "sports"];
+
+// Solid for 1 type; diagonal split for 2; fall back to red for 3+.
+function cellStyle(types: BaseType[]): CSSProperties {
+  if (types.length === 1) return { backgroundColor: TYPE_COLORS[types[0]].hex };
+  if (types.length === 2) {
+    return {
+      background: `linear-gradient(135deg, ${TYPE_COLORS[types[0]].hex} 50%, ${TYPE_COLORS[types[1]].hex} 50%)`,
+    };
+  }
+  return { backgroundColor: MIXED_COLOR };
+}
 
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -40,18 +54,32 @@ export default function WorkoutCalendar({ exercises, definitions }: Props) {
       const d = new Date(ex.timestamp);
       const key = toDateKey(d);
       if (!map.has(key)) map.set(key, new Set());
-      const type = defMap[(ex.exercise_name ?? "").toLowerCase()] ?? "other";
-      map.get(key)!.add(type);
+      const type = defMap[(ex.exercise_name ?? "").toLowerCase()];
+      if (type) map.get(key)!.add(type);
     }
-    const result = new Map<string, WorkoutType>();
+    const result = new Map<string, BaseType[]>();
     for (const [key, types] of map) {
-      const s = types.has("strength"), c = types.has("cardio");
-      if (s && c) result.set(key, "mixed");
-      else if (s)  result.set(key, "strength");
-      else if (c)  result.set(key, "cardio");
-      else         result.set(key, "other");
+      const ordered = SOLID_TYPES.filter((t) => types.has(t));
+      if (ordered.length > 0) result.set(key, ordered);
     }
     return result;
+  }, [exercises, defMap]);
+
+  const dayExercises = useMemo(() => {
+    const map = new Map<string, { name: string; type: BaseType }[]>();
+    for (const ex of exercises) {
+      const d = new Date(ex.timestamp);
+      const key = toDateKey(d);
+      const raw = defMap[(ex.exercise_name ?? "").toLowerCase()];
+      if (!raw || !(SOLID_TYPES as string[]).includes(raw)) continue;
+      const name = ex.exercise_name ?? "Unknown";
+      if (!map.has(key)) map.set(key, []);
+      const list = map.get(key)!;
+      if (!list.some((e) => e.name === name)) {
+        list.push({ name, type: raw as BaseType });
+      }
+    }
+    return map;
   }, [exercises, defMap]);
 
   // Build the calendar grid for the current month
@@ -88,8 +116,8 @@ export default function WorkoutCalendar({ exercises, definitions }: Props) {
     return y === year && m === month;
   });
   const totalWorkouts = monthWorkouts.length;
-  const strengthDays = monthWorkouts.filter(([, t]) => t === "strength" || t === "mixed").length;
-  const cardioDays   = monthWorkouts.filter(([, t]) => t === "cardio"   || t === "mixed").length;
+  const strengthDays = monthWorkouts.filter(([, t]) => t.includes("strength")).length;
+  const cardioDays   = monthWorkouts.filter(([, t]) => t.includes("cardio")).length;
 
   return (
     <div className="space-y-4">
@@ -117,21 +145,39 @@ export default function WorkoutCalendar({ exercises, definitions }: Props) {
         {days.map((day, i) => {
           if (!day) return <div key={i} />;
           const key = toDateKey(day);
-          const type = workoutDays.get(key);
+          const types = workoutDays.get(key);
           const isToday = day.toDateString() === today.toDateString();
           const isFuture = day > today;
+          const hasWorkout = !!types && types.length > 0 && !isFuture;
+          const items = dayExercises.get(key) ?? [];
+          const dayLabel = day.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
 
           return (
-            <div key={i} className="aspect-square flex items-center justify-center relative">
-              <div className={`
-                w-full h-full rounded-xl flex items-center justify-center
-                ${type && !isFuture ? TYPE_COLORS[type].bg : "bg-secondary/50"}
-                ${isToday ? "ring-2 ring-white/60 ring-offset-1 ring-offset-background" : ""}
-              `}>
-                <span className={`text-xs font-medium ${type && !isFuture ? "text-white" : isToday ? "text-white" : "text-muted-foreground"}`}>
+            <div key={i} className="group relative aspect-square flex items-center justify-center">
+              <div
+                style={hasWorkout ? cellStyle(types!) : undefined}
+                className={`
+                  w-full h-full rounded-xl flex items-center justify-center
+                  ${!hasWorkout ? "bg-secondary/50" : ""}
+                  ${isToday ? "ring-2 ring-white/60 ring-offset-1 ring-offset-background" : ""}
+                `}
+              >
+                <span className={`text-xs font-medium ${hasWorkout || isToday ? "text-white" : "text-muted-foreground"}`}>
                   {day.getDate()}
                 </span>
               </div>
+
+              {hasWorkout && (
+                <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-lg opacity-0 transition-opacity duration-100 group-hover:opacity-100">
+                  <div className="mb-1 font-semibold whitespace-nowrap">{dayLabel}</div>
+                  {items.map((ex, i) => (
+                    <div key={i} className="flex items-center gap-1.5 whitespace-nowrap">
+                      <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: TYPE_COLORS[ex.type].hex }} />
+                      <span>{ex.name}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           );
         })}
@@ -139,12 +185,19 @@ export default function WorkoutCalendar({ exercises, definitions }: Props) {
 
       {/* Legend */}
       <div className="flex flex-wrap gap-3 pt-1">
-        {(Object.entries(TYPE_COLORS) as [WorkoutType, { bg: string; label: string }][]).map(([type, { bg, label }]) => (
+        {SOLID_TYPES.map((type) => (
           <div key={type} className="flex items-center gap-1.5">
-            <div className={`w-2.5 h-2.5 rounded-sm ${bg}`} />
-            <span className="text-[11px] text-muted-foreground">{label}</span>
+            <div className={`w-2.5 h-2.5 rounded-sm ${TYPE_COLORS[type].bg}`} />
+            <span className="text-[11px] text-muted-foreground">{TYPE_COLORS[type].label}</span>
           </div>
         ))}
+        <div className="flex items-center gap-1.5">
+          <div
+            className="w-2.5 h-2.5 rounded-sm"
+            style={{ background: `linear-gradient(135deg, ${TYPE_COLORS.strength.hex} 50%, ${TYPE_COLORS.cardio.hex} 50%)` }}
+          />
+          <span className="text-[11px] text-muted-foreground">Mixed</span>
+        </div>
       </div>
 
       {/* Monthly stats */}

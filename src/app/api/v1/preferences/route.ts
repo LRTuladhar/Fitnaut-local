@@ -1,17 +1,18 @@
 import { type NextRequest } from "next/server";
 import { validateApiKey, unauthorized } from "@/lib/api-auth";
+import { resolveUserId } from "@/lib/api-user";
 import db from "@/db";
 import { userPreferences } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { DEFAULT_USER_ID } from "@/lib/constants";
 
 export async function GET(request: NextRequest) {
   if (!validateApiKey(request)) return unauthorized();
 
+  const userId = await resolveUserId(request);
   const prefs = db
     .select()
     .from(userPreferences)
-    .where(eq(userPreferences.user_id, DEFAULT_USER_ID))
+    .where(eq(userPreferences.user_id, userId))
     .get();
 
   return Response.json({ ok: true, data: prefs ?? null });
@@ -21,6 +22,7 @@ export async function PUT(request: NextRequest) {
   if (!validateApiKey(request)) return unauthorized();
 
   const body = await request.json();
+  const userId = await resolveUserId(request, body.user_id);
   const fields: Record<string, any> = {};
 
   if (body.weight_unit !== undefined) fields.weight_unit = body.weight_unit;
@@ -37,17 +39,17 @@ export async function PUT(request: NextRequest) {
   const existing = db
     .select({ user_id: userPreferences.user_id })
     .from(userPreferences)
-    .where(eq(userPreferences.user_id, DEFAULT_USER_ID))
+    .where(eq(userPreferences.user_id, userId))
     .get();
 
   if (existing) {
     db.update(userPreferences)
       .set(fields)
-      .where(eq(userPreferences.user_id, DEFAULT_USER_ID))
+      .where(eq(userPreferences.user_id, userId))
       .run();
   } else {
     db.insert(userPreferences)
-      .values({ user_id: DEFAULT_USER_ID, ...fields })
+      .values({ user_id: userId, ...fields })
       .run();
   }
 

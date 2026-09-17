@@ -5,7 +5,7 @@ import { Check, Eye, EyeOff, Key, UserCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { getUserProfile } from "@/db/actions";
-import { DEFAULT_USER_ID } from "@/lib/constants";
+import { useCurrentUser } from "@/components/CurrentUserProvider";
 import { useToast } from "@/components/ui/toast";
 
 type Provider = "openrouter" | "anthropic";
@@ -19,14 +19,16 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const { toast } = useToast();
+  const { currentUserId } = useCurrentUser();
 
   useEffect(() => {
-    getUserProfile(DEFAULT_USER_ID).then((profile) => {
+    setUsername(null);
+    getUserProfile(currentUserId).then((profile) => {
       if (profile?.name) {
         setUsername(profile.name);
       }
     });
-  }, []);
+  }, [currentUserId]);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();

@@ -8,7 +8,7 @@ import {
   getLastExerciseSet,
   getRecentExercises,
 } from "@/db/actions";
-import { DEFAULT_USER_ID } from "@/lib/constants";
+import { useCurrentUser } from "@/components/CurrentUserProvider";
 import type { ExerciseDefinition } from "@/lib/exerciseParser";
 
 export function useExerciseDefinitions() {
@@ -26,6 +26,8 @@ export function useExerciseDefinitions() {
         body_parts: e.bodyParts ?? [],
         category: e.category ?? "",
         expected_parameters: e.expectedParameters ?? [],
+        load_multiplier: e.loadMultiplier ?? 1,
+        bodyweight_factor: e.bodyweightFactor,
       }));
     },
     staleTime: Infinity,
@@ -44,11 +46,12 @@ export interface LogExerciseInput {
 
 export function useLogExercise() {
   const queryClient = useQueryClient();
+  const { currentUserId } = useCurrentUser();
 
   return useMutation({
     mutationFn: async (input: LogExerciseInput) => {
       const data = await insertExercise({
-        userId: DEFAULT_USER_ID,
+        userId: currentUserId,
         exerciseDefinitionId: input.exercise_definition_id,
         exerciseName: input.exercise_name,
         reps: input.reps ?? null,
@@ -106,22 +109,24 @@ export function useDeleteExercise() {
 }
 
 export function useLastExerciseSet(exerciseName: string | null) {
+  const { currentUserId } = useCurrentUser();
   return useQuery({
-    queryKey: ["last-set", exerciseName],
+    queryKey: ["last-set", exerciseName, currentUserId],
     enabled: !!exerciseName,
     staleTime: 0,
     queryFn: async () => {
       if (!exerciseName) return null;
-      return getLastExerciseSet(DEFAULT_USER_ID, exerciseName);
+      return getLastExerciseSet(currentUserId, exerciseName);
     },
   });
 }
 
 export function useRecentExercises() {
+  const { currentUserId } = useCurrentUser();
   return useQuery({
-    queryKey: ["exercises", "recent"],
+    queryKey: ["exercises", "recent", currentUserId],
     queryFn: async () => {
-      const data = await getRecentExercises(DEFAULT_USER_ID);
+      const data = await getRecentExercises(currentUserId);
       const counts = new Map<string, number>();
       for (const row of data) {
         counts.set(row.exercise_definition_id, (counts.get(row.exercise_definition_id) ?? 0) + 1);

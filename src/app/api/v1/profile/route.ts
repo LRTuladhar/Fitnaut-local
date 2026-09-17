@@ -1,17 +1,18 @@
 import { type NextRequest } from "next/server";
 import { validateApiKey, unauthorized } from "@/lib/api-auth";
+import { resolveUserId } from "@/lib/api-user";
 import db from "@/db";
 import { userProfiles } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { DEFAULT_USER_ID } from "@/lib/constants";
 
 export async function GET(request: NextRequest) {
   if (!validateApiKey(request)) return unauthorized();
 
+  const userId = await resolveUserId(request);
   const profile = db
     .select()
     .from(userProfiles)
-    .where(eq(userProfiles.user_id, DEFAULT_USER_ID))
+    .where(eq(userProfiles.user_id, userId))
     .get();
 
   return Response.json({ ok: true, data: profile ?? null });
@@ -21,6 +22,7 @@ export async function PUT(request: NextRequest) {
   if (!validateApiKey(request)) return unauthorized();
 
   const body = await request.json();
+  const userId = await resolveUserId(request, body.user_id);
   const fields: Record<string, any> = {};
 
   if (body.name !== undefined) fields.name = body.name;
@@ -39,17 +41,17 @@ export async function PUT(request: NextRequest) {
   const existing = db
     .select({ user_id: userProfiles.user_id })
     .from(userProfiles)
-    .where(eq(userProfiles.user_id, DEFAULT_USER_ID))
+    .where(eq(userProfiles.user_id, userId))
     .get();
 
   if (existing) {
     db.update(userProfiles)
       .set(fields)
-      .where(eq(userProfiles.user_id, DEFAULT_USER_ID))
+      .where(eq(userProfiles.user_id, userId))
       .run();
   } else {
     db.insert(userProfiles)
-      .values({ user_id: DEFAULT_USER_ID, ...fields })
+      .values({ user_id: userId, ...fields })
       .run();
   }
 

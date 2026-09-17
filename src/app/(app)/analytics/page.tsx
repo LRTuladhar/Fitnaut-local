@@ -2,8 +2,10 @@
 
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getExercises } from "@/db/actions";
-import { DEFAULT_USER_ID } from "@/lib/constants";
+import { getExercises, getHealthMetrics } from "@/db/actions";
+import { REFERENCE_BODYWEIGHT_LBS } from "@/lib/constants";
+import { useCurrentUser } from "@/components/CurrentUserProvider";
+import { KG_TO_LBS } from "@/lib/units";
 import { useExerciseDefinitions } from "@/hooks/useExercises";
 import {
   filterByRange,
@@ -22,9 +24,13 @@ import { Trophy, BarChart2 } from "lucide-react";
 import WorkoutCalendar from "@/components/analytics/WorkoutCalendar";
 import ExerciseTimeline from "@/components/analytics/ExerciseTimeline";
 import MuscleFocusTimeline from "@/components/analytics/MuscleFocusTimeline";
+import ExerciseProgressTimeline from "@/components/analytics/ExerciseProgressTimeline";
 import CalorieTimeline from "@/components/analytics/CalorieTimeline";
 import NutritionTimeline from "@/components/analytics/NutritionTimeline";
 import { PageSkeleton } from "@/components/ui/skeleton";
+import { useDayNotes } from "@/hooks/useDayNotes";
+import { NoteMarkers } from "@/components/NoteMarkers";
+import { NotesToggle } from "@/components/NotesToggle";
 
 type Range = "week" | "month" | "year" | "all";
 const RANGES: { label: string; value: Range }[] = [
@@ -36,22 +42,43 @@ const RANGES: { label: string; value: Range }[] = [
 
 export default function AnalyticsPage() {
   const [range, setRange] = useState<Range>("month");
+  const [showNotes, setShowNotes] = useState(false);
   const { data: definitions = [] } = useExerciseDefinitions();
+  const { currentUserId } = useCurrentUser();
+  const { data: notes = [] } = useDayNotes();
 
   const { data: allExercises = [], isPending } = useQuery({
-    queryKey: ["exercises", "all"],
+    queryKey: ["exercises", "all", currentUserId],
     queryFn: async () => {
-      return getExercises(DEFAULT_USER_ID, { order: "asc" });
+      return getExercises(currentUserId, { order: "asc" });
     },
   });
 
   const exercises = useMemo(() => filterByRange(allExercises, range), [allExercises, range]);
 
-  const volumeData = useMemo(() => getVolumeByDay(exercises), [exercises]);
+  // Latest logged bodyweight loads reps-based bodyweight movements in the volume chart.
+  const { data: healthMetrics = [] } = useQuery({
+    queryKey: ["health_metrics", currentUserId],
+    queryFn: async () => getHealthMetrics(currentUserId),
+  });
+  const bodyweightLbs = useMemo(() => {
+    const withWeight = healthMetrics.find((m: any) => m.weight_kg != null);
+    const bw = withWeight?.weight_kg;
+    return bw ? bw * KG_TO_LBS : REFERENCE_BODYWEIGHT_LBS;
+  }, [healthMetrics]);
+
+  const volumeData = useMemo(
+    () => getVolumeByDay(exercises, { definitions, bodyweightLbs }),
+    [exercises, definitions, bodyweightLbs]
+  );
+  const volumeNotes = useMemo(() => {
+    const dates = new Set(volumeData.map((d) => d.date));
+    return notes.filter((n) => dates.has(n.date));
+  }, [notes, volumeData]);
   const typeData = useMemo(() => getTypeDistribution(exercises, definitions), [exercises, definitions]);
   const muscleData = useMemo(() => getMuscleGroupActivity(exercises, definitions).slice(0, 8), [exercises, definitions]);
-  const topExercises = useMemo(() => getTopExercises(exercises, definitions).slice(0, 8), [exercises, definitions]);
-  const prs = useMemo(() => getPersonalRecords(allExercises), [allExercises]);
+  const topExercises = useMemo(() => getTopExercises(exercises, definitions).slice(0, 10), [exercises, definitions]);
+  const prs = useMemo(() => getPersonalRecords(exercises), [exercises]);
   const workoutDays = useMemo(() => getWorkoutDays(exercises).length, [exercises]);
 
   const isEmpty = exercises.length === 0;
@@ -60,8 +87,9 @@ export default function AnalyticsPage() {
 
   return (
     <div className="flex flex-col min-h-full">
-      <div className="px-5 pt-12 pb-4">
+      <div className="px-5 pt-12 pb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Analytics</h1>
+        <NotesToggle checked={showNotes} onChange={setShowNotes} />
       </div>
 
       <div className="flex-1 overflow-y-auto px-5 pb-8 space-y-4">
@@ -71,11 +99,14 @@ export default function AnalyticsPage() {
         {/* Muscle focus timeline */}
         <MuscleFocusTimeline exercises={allExercises} definitions={definitions} />
 
+        {/* Exercise progress timeline */}
+        <ExerciseProgressTimeline exercises={allExercises} definitions={definitions} />
+
         {/* Calorie timeline */}
-        <CalorieTimeline />
+        <CalorieTimeline showNotes={showNotes} />
 
         {/* Nutrition timeline */}
-        <NutritionTimeline />
+        <NutritionTimeline showNotes={showNotes} />
 
         {isEmpty ? (
           <EmptyState />
@@ -110,6 +141,10 @@ export default function AnalyticsPage() {
             {/* Volume chart */}
             {volumeData.length > 0 && (
               <Card title="Volume (lbs)">
+                <p className="text-[11px] leading-snug text-muted-foreground">
+                  Σ weight × reps. Dumbbell lifts count both sides (×2); bodyweight lifts use{" "}
+                  {Math.round(bodyweightLbs)} lbs × movement factor. Isometric/band work excluded.
+                </p>
                 <ResponsiveContainer width="100%" height={160}>
                   <BarChart data={volumeData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                     <XAxis
@@ -128,6 +163,7 @@ export default function AnalyticsPage() {
                       labelFormatter={(v) => new Date(v).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                     />
                     <Bar dataKey="volume" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    {showNotes && <NoteMarkers notes={volumeNotes} resolveX={(d) => d} />}
                   </BarChart>
                 </ResponsiveContainer>
               </Card>
@@ -159,7 +195,7 @@ export default function AnalyticsPage() {
                           <div className="w-2.5 h-2.5 rounded-full" style={{ background: item.color }} />
                           <span className="text-xs capitalize">{item.type}</span>
                         </div>
-                        <span className="text-xs font-semibold">{item.count}</span>
+                        <span className="text-xs font-semibold">{item.count}d</span>
                       </div>
                     ))}
                   </div>
@@ -193,38 +229,45 @@ export default function AnalyticsPage() {
               </Card>
             )}
 
-            {/* Top exercises */}
-            {topExercises.length > 0 && (
-              <Card title="Most Performed">
-                <div className="space-y-2">
-                  {topExercises.map((ex, i) => (
-                    <div key={ex.name} className="flex items-center gap-3">
-                      <span className="text-xs text-muted-foreground w-5 text-right">{i + 1}</span>
-                      <span className="text-sm flex-1 truncate">{ex.name}</span>
-                      <span className="text-xs font-semibold text-primary">{ex.count}×</span>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            )}
+            {/* Top exercises + Personal records (side-by-side on wide screens) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {topExercises.length > 0 && (
+                <Card title="Most Performed">
+                  <div className="space-y-2">
+                    {topExercises.map((ex, i) => (
+                      <div key={ex.name} className="flex items-center gap-3">
+                        <span className="text-xs font-bold text-orange-400 w-5 text-right">{i + 1}</span>
+                        <span className="text-sm flex-1 truncate">{ex.name}</span>
+                        <div className="text-right whitespace-nowrap">
+                          <span className="text-xs font-semibold text-primary">{ex.count}d</span>
+                          <span className="text-xs text-muted-foreground"> · {ex.sets} sets</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
 
-            {/* Personal records */}
-            {prs.length > 0 && (
-              <Card title="Personal Records">
-                <div className="space-y-2">
-                  {prs.map((pr, i) => (
-                    <div key={pr.name} className="flex items-center gap-3">
-                      <Trophy
-                        className={`w-4 h-4 flex-shrink-0 ${i === 0 ? "text-yellow-400" : "text-orange-400"}`}
-                        strokeWidth={1.8}
-                      />
-                      <span className="text-sm flex-1 truncate">{pr.name}</span>
-                      <span className="text-xs font-semibold">{Math.round(pr.weight_lbs)} lbs</span>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            )}
+              {prs.length > 0 && (
+                <Card title="Personal Records">
+                  <div className="space-y-2">
+                    {prs.map((pr) => (
+                      <div key={pr.name} className="flex items-center gap-3">
+                        <Trophy
+                          className="w-4 h-4 flex-shrink-0 text-orange-400"
+                          strokeWidth={1.8}
+                        />
+                        <span className="text-sm flex-1 truncate">{pr.name}</span>
+                        <div className="text-right whitespace-nowrap">
+                          <span className="text-xs font-semibold">{Math.round(pr.weight_lbs)} lbs</span>
+                          <span className="text-xs text-muted-foreground"> · {pr.days}d</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
+            </div>
           </>
         )}
       </div>

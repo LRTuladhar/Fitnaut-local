@@ -3,18 +3,21 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ReferenceLine } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ReferenceArea } from "recharts";
 import { getMeals } from "@/db/actions";
-import { DEFAULT_USER_ID, DAILY_PROTEIN_TARGET_G } from "@/lib/constants";
+import { PROTEIN_BAND_MIN_G, PROTEIN_BAND_MAX_G } from "@/lib/constants";
+import { useCurrentUser } from "@/components/CurrentUserProvider";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useDayNotes } from "@/hooks/useDayNotes";
+import { NoteMarkers } from "@/components/NoteMarkers";
 
 const COLUMN_WIDTH = 24;
 const MAX_DAYS = 90;
 const CHART_HEIGHT = 200;
 
 const NUTRIENTS = [
-  { key: "carbs", label: "Carbs", color: "#3b82f6" },
   { key: "protein", label: "Protein", color: "#22c55e" },
+  { key: "carbs", label: "Carbs", color: "#3b82f6" },
   { key: "fat", label: "Fat", color: "#f59e0b" },
   { key: "fiber", label: "Fiber", color: "#a855f7" },
   { key: "sugar", label: "Sugar", color: "#ec4899" },
@@ -52,12 +55,14 @@ function addDays(d: Date, n: number): Date {
   return r;
 }
 
-export default function NutritionTimeline() {
+export default function NutritionTimeline({ showNotes = false }: { showNotes?: boolean }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { currentUserId } = useCurrentUser();
+  const { data: notes = [] } = useDayNotes();
 
   const { data: meals = [], isPending } = useQuery<MealRow[]>({
-    queryKey: ["meals", "all"],
-    queryFn: async () => getMeals(DEFAULT_USER_ID, { order: "asc" }),
+    queryKey: ["meals", "all", currentUserId],
+    queryFn: async () => getMeals(currentUserId, { order: "asc" }),
   });
 
   const [selected, setSelected] = useState<NutrientKey | null>(null);
@@ -107,6 +112,12 @@ export default function NutritionTimeline() {
         return { date: key, ...entry };
       }),
     [days, totalsByDay]
+  );
+
+  const noteDates = useMemo(() => new Set(chartData.map((d) => d.date)), [chartData]);
+  const visibleNotes = useMemo(
+    () => notes.filter((n) => noteDates.has(n.date)),
+    [notes, noteDates]
   );
 
   const [visibleStartIdx, setVisibleStartIdx] = useState(0);
@@ -260,19 +271,24 @@ export default function NutritionTimeline() {
                   />
                 ))}
                 {selected === "protein" && (
-                  <ReferenceLine
-                    y={DAILY_PROTEIN_TARGET_G}
+                  <ReferenceArea
+                    y1={PROTEIN_BAND_MIN_G}
+                    y2={PROTEIN_BAND_MAX_G}
+                    fill="#facc15"
+                    fillOpacity={0.14}
                     stroke="#facc15"
                     strokeDasharray="4 4"
+                    strokeOpacity={0.7}
                     ifOverflow="extendDomain"
                     label={{
-                      value: `${DAILY_PROTEIN_TARGET_G} g`,
-                      position: "right",
+                      value: `${PROTEIN_BAND_MIN_G}–${PROTEIN_BAND_MAX_G} g`,
+                      position: "insideTopRight",
                       fill: "#facc15",
                       fontSize: 10,
                     }}
                   />
                 )}
+                {showNotes && <NoteMarkers notes={visibleNotes} resolveX={(d) => d} dayWidthPx={COLUMN_WIDTH} />}
               </BarChart>
             </div>
 

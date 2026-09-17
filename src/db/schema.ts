@@ -47,6 +47,17 @@ export const healthMetrics = sqliteTable(
   (table) => [uniqueIndex("health_metrics_user_date_idx").on(table.user_id, table.date)]
 );
 
+export const dayNotes = sqliteTable(
+  "day_notes",
+  {
+    id: text("id").primaryKey(),
+    user_id: text("user_id").notNull(),
+    date: text("date").notNull(),
+    note: text("note").notNull(),
+  },
+  (table) => [uniqueIndex("day_notes_user_date_idx").on(table.user_id, table.date)]
+);
+
 export const userPreferences = sqliteTable("user_preferences", {
   user_id: text("user_id").primaryKey(),
   weight_unit: text("weight_unit").notNull().default("lbs"),

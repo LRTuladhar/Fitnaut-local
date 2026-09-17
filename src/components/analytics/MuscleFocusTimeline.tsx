@@ -207,7 +207,7 @@ export default function MuscleFocusTimeline({ exercises, definitions }: Props) {
                 >
                   {hasParts && (
                     <div className="flex flex-col items-center gap-0.5">
-                      {hasSelected && <span className="w-4 h-[4px] bg-green-400 rounded-[1px]" />}
+                      <span className={`w-4 h-[4px] rounded-[1px] ${hasSelected ? "bg-green-400" : "bg-transparent"}`} />
                       <BodyMap view="front" activeParts={activeParts} selectedPart={selectedPart} highlight={FRONT_COLOR} selectedColor={SELECTED_COLOR} className="w-4 h-auto" />
                       <BodyMap view="back" activeParts={activeParts} selectedPart={selectedPart} highlight={BACK_COLOR} selectedColor={SELECTED_COLOR} className="w-4 h-auto" />
                     </div>

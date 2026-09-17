@@ -1,7 +1,7 @@
 import { type NextRequest } from "next/server";
 import { validateApiKey, unauthorized } from "@/lib/api-auth";
+import { resolveUserId } from "@/lib/api-user";
 import { getExercises } from "@/db/actions";
-import { DEFAULT_USER_ID } from "@/lib/constants";
 import { groupIntoSessions } from "@/lib/sessionGrouping";
 
 export async function GET(request: NextRequest) {
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const to = searchParams.get("to") ?? undefined;
   const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : undefined;
 
-  const exercises = await getExercises(DEFAULT_USER_ID, { from, to, order: "asc" });
+  const exercises = await getExercises(await resolveUserId(request), { from, to, order: "asc" });
   const sessions = groupIntoSessions(exercises);
 
   const data = limit ? sessions.slice(0, limit) : sessions;

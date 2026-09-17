@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getExercises, getMeals, deleteMeal } from "@/db/actions";
-import { DEFAULT_USER_ID } from "@/lib/constants";
+import { useCurrentUser } from "@/components/CurrentUserProvider";
 import { groupIntoSessions, type WorkoutSession } from "@/lib/sessionGrouping";
 import { useExerciseDefinitions, useDeleteExercise } from "@/hooks/useExercises";
 import { formatWeight, formatDuration, KG_TO_LBS } from "@/lib/units";
@@ -83,22 +83,23 @@ export default function HistoryPage() {
   const [selected, setSelected] = useState<WorkoutSession | null>(null);
   const { data: definitions = [] } = useExerciseDefinitions();
   const queryClient = useQueryClient();
+  const { currentUserId } = useCurrentUser();
   const defMap = useMemo(
     () => Object.fromEntries(definitions.map((d) => [d.name.toLowerCase(), d])),
     [definitions]
   );
 
   const { data: exercises = [], isPending } = useQuery({
-    queryKey: ["exercises", "all"],
+    queryKey: ["exercises", "all", currentUserId],
     queryFn: async () => {
-      return getExercises(DEFAULT_USER_ID, { order: "desc" });
+      return getExercises(currentUserId, { order: "desc" });
     },
   });
 
   const { data: meals = [], isPending: mealsPending } = useQuery<MealRow[]>({
-    queryKey: ["meals", "history"],
+    queryKey: ["meals", "history", currentUserId],
     queryFn: async () => {
-      return getMeals(DEFAULT_USER_ID, { order: "desc" });
+      return getMeals(currentUserId, { order: "desc" });
     },
     enabled: view === "meals",
   });
@@ -377,14 +378,15 @@ function SessionDetail({ session, defMap, onBack }: {
 }) {
   const deleteExercise = useDeleteExercise();
   const queryClient = useQueryClient();
+  const { currentUserId } = useCurrentUser();
   const sessionExerciseIds = useMemo(() => new Set(session.exercises.map((e) => e.id)), [session]);
   const [editExercise, setEditExercise] = useState<EditExercise | undefined>();
 
   // Pull sets from the live query so edits/deletes reflect immediately
   const { data: allExercises = [] } = useQuery({
-    queryKey: ["exercises", "all"],
+    queryKey: ["exercises", "all", currentUserId],
     queryFn: async () => {
-      return getExercises(DEFAULT_USER_ID, { order: "asc" });
+      return getExercises(currentUserId, { order: "asc" });
     },
   });
 

@@ -5,6 +5,7 @@ import { BottomSheet, BottomSheetHeader, BottomSheetTitle } from "@/components/u
 import { Sparkles, Dumbbell, Plus, Loader2, AlertCircle, MessageSquare } from "lucide-react";
 import type { ExerciseDefinition } from "@/lib/exerciseParser";
 import type { EditExercise } from "@/components/workout/ManualEntryDrawer";
+import { useCurrentUser } from "@/components/CurrentUserProvider";
 
 interface Recommendation {
   exerciseName: string;
@@ -31,6 +32,7 @@ export default function RecommendationDrawer({ open, onClose, onLogRecommendatio
   const [result, setResult] = useState<{ workoutSummary: string; recommendations: Recommendation[] } | null>(null);
   const [comment, setComment] = useState("");
   const generatedAt = useRef<number | null>(null);
+  const { currentUserId } = useCurrentUser();
 
   // Expire stale recommendations when the drawer reopens
   useEffect(() => {
@@ -50,7 +52,7 @@ export default function RecommendationDrawer({ open, onClose, onLogRecommendatio
       const res = await fetch("/api/ai/recommend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider: "openrouter", exerciseLibrary, comment: comment.trim() || undefined }),
+        body: JSON.stringify({ provider: "openrouter", exerciseLibrary, comment: comment.trim() || undefined, userId: currentUserId }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to generate");

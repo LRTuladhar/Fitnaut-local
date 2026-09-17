@@ -1,7 +1,7 @@
 import { type NextRequest } from "next/server";
 import { validateApiKey, unauthorized } from "@/lib/api-auth";
+import { resolveUserId } from "@/lib/api-user";
 import { getHealthMetrics, upsertHealthMetric } from "@/db/actions";
-import { DEFAULT_USER_ID } from "@/lib/constants";
 import { LBS_TO_KG } from "@/lib/units";
 
 export async function GET(request: NextRequest) {
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   const from = searchParams.get("from") ?? undefined;
   const to = searchParams.get("to") ?? undefined;
 
-  let data = await getHealthMetrics(DEFAULT_USER_ID);
+  let data = await getHealthMetrics(await resolveUserId(request));
 
   if (from) {
     data = data.filter((m) => m.date >= from);
@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
   if (!validateApiKey(request)) return unauthorized();
 
   const body = await request.json();
+  const userId = await resolveUserId(request, body.user_id);
   const { date, weight_lbs, heart_rate, systolic_bp, diastolic_bp, notes } = body;
 
   if (!date) {
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
   }
 
   await upsertHealthMetric({
-    userId: DEFAULT_USER_ID,
+    userId,
     date,
     weightKg: weight_lbs != null ? weight_lbs * LBS_TO_KG : null,
     heartRate: heart_rate ?? null,

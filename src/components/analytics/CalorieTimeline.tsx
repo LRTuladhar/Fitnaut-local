@@ -5,8 +5,11 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ReferenceLine } from "recharts";
 import { getMeals } from "@/db/actions";
-import { DEFAULT_USER_ID, MEAL_TYPES, type MealType, DAILY_CALORIE_TARGET } from "@/lib/constants";
+import { MEAL_TYPES, type MealType, DAILY_CALORIE_TARGET } from "@/lib/constants";
+import { useCurrentUser } from "@/components/CurrentUserProvider";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useDayNotes } from "@/hooks/useDayNotes";
+import { NoteMarkers } from "@/components/NoteMarkers";
 
 const COLUMN_WIDTH = 24;
 const MAX_DAYS = 90;
@@ -108,12 +111,14 @@ function CalorieTooltip({
   );
 }
 
-export default function CalorieTimeline() {
+export default function CalorieTimeline({ showNotes = false }: { showNotes?: boolean }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { currentUserId } = useCurrentUser();
+  const { data: notes = [] } = useDayNotes();
 
   const { data: meals = [], isPending } = useQuery<MealRow[]>({
-    queryKey: ["meals", "all"],
-    queryFn: async () => getMeals(DEFAULT_USER_ID, { order: "asc" }),
+    queryKey: ["meals", "all", currentUserId],
+    queryFn: async () => getMeals(currentUserId, { order: "asc" }),
   });
 
   const [selected, setSelected] = useState<SeriesKey | null>(null);
@@ -162,6 +167,12 @@ export default function CalorieTimeline() {
         return { date: key, ...entry };
       }),
     [days, totalsByDay]
+  );
+
+  const noteDates = useMemo(() => new Set(chartData.map((d) => d.date)), [chartData]);
+  const visibleNotes = useMemo(
+    () => notes.filter((n) => noteDates.has(n.date)),
+    [notes, noteDates]
   );
 
   const [visibleStartIdx, setVisibleStartIdx] = useState(0);
@@ -319,6 +330,7 @@ export default function CalorieTimeline() {
                     }}
                   />
                 )}
+                {showNotes && <NoteMarkers notes={visibleNotes} resolveX={(d) => d} dayWidthPx={COLUMN_WIDTH} />}
               </BarChart>
             </div>
 

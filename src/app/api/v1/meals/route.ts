@@ -1,7 +1,8 @@
 import { type NextRequest } from "next/server";
 import { validateApiKey, unauthorized } from "@/lib/api-auth";
+import { resolveUserId } from "@/lib/api-user";
 import { getMeals, insertMeal, deleteMeal } from "@/db/actions";
-import { DEFAULT_USER_ID, MEAL_TYPES } from "@/lib/constants";
+import { MEAL_TYPES } from "@/lib/constants";
 
 export async function GET(request: NextRequest) {
   if (!validateApiKey(request)) return unauthorized();
@@ -11,7 +12,8 @@ export async function GET(request: NextRequest) {
   const to = searchParams.get("to") ?? undefined;
   const order = (searchParams.get("order") === "asc" ? "asc" : "desc") as "asc" | "desc";
 
-  const data = await getMeals(DEFAULT_USER_ID, { from, to, order });
+  const userId = await resolveUserId(request);
+  const data = await getMeals(userId, { from, to, order });
   return Response.json({ ok: true, data });
 }
 
@@ -19,6 +21,7 @@ export async function POST(request: NextRequest) {
   if (!validateApiKey(request)) return unauthorized();
 
   const body = await request.json();
+  const userId = await resolveUserId(request, body.user_id);
   const { meal_type, description, calories, timestamp, carbs_g, protein_g, fat_g, fiber_g, sugar_g } = body;
 
   if (typeof description !== "string" || description.trim() === "") {
@@ -46,7 +49,7 @@ export async function POST(request: NextRequest) {
   }
 
   const result = await insertMeal({
-    userId: DEFAULT_USER_ID,
+    userId,
     description: description.trim(),
     calories: Math.round(calories),
     mealType: meal_type ?? null,

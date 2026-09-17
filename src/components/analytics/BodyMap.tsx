@@ -104,7 +104,7 @@ export default function BodyMap({
           <g
             key={id}
             fill={fill}
-            stroke={isDimmed ? "none" : "#ffffff"}
+            stroke={isSelected ? "#ffffff" : "none"}
             strokeWidth={1}
             vectorEffect="non-scaling-stroke"
           >

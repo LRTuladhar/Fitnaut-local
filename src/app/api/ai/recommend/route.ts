@@ -7,14 +7,17 @@ import { groupIntoSessions } from "@/lib/sessionGrouping";
 import { parseExercise } from "@/lib/exerciseParser";
 
 export async function POST(request: NextRequest) {
-  const { provider = "openrouter", exerciseLibrary, comment } = await request.json();
-  const userId = DEFAULT_USER_ID;
+  const { provider = "openrouter", exerciseLibrary, comment, userId } = await request.json();
 
-  // Load API key
+  // Personalization (history + profile) uses the account currently selected in
+  // the UI. The API key is SHARED across accounts and lives under the owner.
+  const contextUserId = typeof userId === "string" && userId ? userId : DEFAULT_USER_ID;
+
+  // Load shared API key
   const keyRow = db
     .select()
     .from(userApiKeys)
-    .where(eq(userApiKeys.user_id, userId))
+    .where(eq(userApiKeys.user_id, DEFAULT_USER_ID))
     .get();
 
   const apiKey = provider === "anthropic"
@@ -25,22 +28,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "API key not configured. Add it in Settings." }, { status: 400 });
   }
 
-  // Load last 200 exercises
+  // Load last 200 exercises for the selected account
   const exerciseRows = db
     .select()
     .from(exercises)
-    .where(eq(exercises.user_id, userId))
+    .where(eq(exercises.user_id, contextUserId))
     .orderBy(desc(exercises.timestamp))
     .limit(200)
     .all();
 
   const sessions = groupIntoSessions(exerciseRows ?? []).slice(0, 5);
 
-  // Load user profile
+  // Load selected account's profile
   const profile = db
     .select()
     .from(userProfiles)
-    .where(eq(userProfiles.user_id, userId))
+    .where(eq(userProfiles.user_id, contextUserId))
     .get();
 
   // Build prompt

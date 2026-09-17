@@ -7,6 +7,18 @@ export interface ExerciseDefinition {
   body_parts: string[];
   category: string;
   expected_parameters: string[];
+  /**
+   * How many implements/implements-sides carry the logged weight.
+   * 2 = per-hand loading (dumbbell exercises: both arms move the same weight).
+   * 1 (default) = the logged weight is the TOTAL external load (barbell, machine, cable).
+   */
+  load_multiplier?: number;
+  /**
+   * For reps-based bodyweight movements: fraction of bodyweight that counts as
+   * external load for volume (Pull-up 1.0, Push-up 0.65, Hanging Leg Raise 0.35,
+   * Crunch 0.25). Undefined = bodyweight/band/isometric work contributes 0 volume.
+   */
+  bodyweight_factor?: number;
 }
 
 export interface ParsedExercise {

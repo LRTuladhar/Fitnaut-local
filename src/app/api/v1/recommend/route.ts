@@ -3,9 +3,9 @@ import { eq, desc } from "drizzle-orm";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { validateApiKey, unauthorized } from "@/lib/api-auth";
+import { resolveUserId } from "@/lib/api-user";
 import db from "@/db";
 import { exercises, userProfiles, userApiKeys } from "@/db/schema";
-import { DEFAULT_USER_ID } from "@/lib/constants";
 import { groupIntoSessions } from "@/lib/sessionGrouping";
 import { parseExercise } from "@/lib/exerciseParser";
 
@@ -28,8 +28,8 @@ function loadLibrary() {
 export async function POST(request: NextRequest) {
   if (!validateApiKey(request)) return unauthorized();
 
-  const { provider = "openrouter", comment } = await request.json();
-  const userId = DEFAULT_USER_ID;
+  const { provider = "openrouter", comment, user_id } = await request.json();
+  const userId = await resolveUserId(request, user_id);
   const exerciseLibrary = loadLibrary();
 
   // Load API key

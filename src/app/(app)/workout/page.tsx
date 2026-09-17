@@ -9,7 +9,7 @@ import RecommendationDrawer from "@/components/workout/RecommendationDrawer";
 import VoiceButton from "@/components/workout/VoiceButton";
 import { useQuery } from "@tanstack/react-query";
 import { getTodaysExercises } from "@/db/actions";
-import { DEFAULT_USER_ID } from "@/lib/constants";
+import { useCurrentUser } from "@/components/CurrentUserProvider";
 import { formatWeight, formatDuration } from "@/lib/units";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { useExerciseDefinitions, useLogExercise } from "@/hooks/useExercises";
@@ -38,11 +38,12 @@ export default function WorkoutPage() {
   const [recOpen, setRecOpen] = useState(false);
   const { data: definitions = [] } = useExerciseDefinitions();
   const logExercise = useLogExercise();
+  const { currentUserId } = useCurrentUser();
 
   const { data: todayExercises = [], isPending: loadingExercises, refetch } = useQuery({
-    queryKey: ["exercises", "today"],
+    queryKey: ["exercises", "today", currentUserId],
     queryFn: async () => {
-      return getTodaysExercises(DEFAULT_USER_ID);
+      return getTodaysExercises(currentUserId);
     },
   });
 
