@@ -46,14 +46,64 @@ export function getHeartRate(hours: number): HeartRatePoint[] {
     .all(since) as HeartRatePoint[];
 }
 
+export type SleepSource = "events" | "watch";
+
 export interface SleepNight {
-  dateUtc: number; // unix epoch seconds of UTC midnight
-  date: string; // "YYYY-MM-DD" in UTC == the wake-up morning in PDT
-  totalSeconds: number; // sleep_seconds
-  deepSeconds: number; // restful_sleep_seconds
+  dateUtc: number; // unix epoch seconds of LOCAL midnight on the wake-up day
+  date: string; // "YYYY-MM-DD" local — the morning you woke up on
+  totalSeconds: number; // ASLEEP seconds (phase-based when phases exist)
+  deepSeconds: number; // deep / restful seconds
+  source: SleepSource; // "events" = built from activity_phases, "watch" = firmware fallback
+  inBedSeconds: number | null; // first sleep-phase start → last sleep-phase end
+  awakeSeconds: number | null; // inBedSeconds − totalSeconds
+  watchTotalSeconds: number | null; // firmware aggregate, kept for comparison
 }
 
-export function getSleepTimeline(): SleepNight[] {
+// ── How nights are built ────────────────────────────────────────────────────
+// The watch reports two independent things:
+//   1. activity_phases — an event stream of `sleep` / `restful_sleep` spans.
+//   2. daily_summary.sleep_seconds — a firmware aggregate summed over a UTC day,
+//      which locally is a 17:00→17:00 window (the firmware floors day starts to
+//      UTC midnight), not a night. It has credited 2h+ of sleep that minute-level
+//      step data contradicts, so it is NOT the source of truth.
+// Nights are therefore built from the phase stream, in LOCAL time:
+//   · a phase starting at/after 20:00 belongs to the next day's night
+//   · a phase starting before 12:00 belongs to that day's night
+//   · anything starting 12:00–20:00 is a nap and is ignored
+//   · awake = in-bed span − asleep, so mid-night wakings (26 min or 2h+) stay visible
+// A night with no phases at all falls back to the firmware aggregate, marked
+// source: "watch" so callers can render it as less trustworthy.
+const NIGHT_START_HOUR = 20; // local
+const NIGHT_END_HOUR = 12; // local
+
+function localDateKey(ts: number, dayShift = 0): string {
+  const d = new Date(ts * 1000);
+  d.setDate(d.getDate() + dayShift);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate()
+  ).padStart(2, "0")}`;
+}
+
+function localMidnightEpoch(dateKey: string): number {
+  const [y, m, d] = dateKey.split("-").map(Number);
+  return Math.floor(new Date(y, m - 1, d, 0, 0, 0).getTime() / 1000);
+}
+
+function nightKeyFor(ts: number): string | null {
+  const hour = new Date(ts * 1000).getHours();
+  if (hour >= NIGHT_START_HOUR) return localDateKey(ts, 1);
+  if (hour < NIGHT_END_HOUR) return localDateKey(ts);
+  return null; // afternoon nap
+}
+
+interface FirmwareDay {
+  date: string; // "YYYY-MM-DD" UTC — also the wake-up day the row is labeled with
+  sleep: number;
+  restful: number;
+  endUtc: number; // the row covers [date_utc, date_utc + 86400)
+}
+
+function getFirmwareDays(): Map<string, FirmwareDay> {
   const rows = getPebbleDb()
     .prepare(
       `SELECT date_utc, sleep_seconds, restful_sleep_seconds
@@ -62,53 +112,104 @@ export function getSleepTimeline(): SleepNight[] {
     )
     .all() as {
     date_utc: number;
-    sleep_seconds: number;
-    restful_sleep_seconds: number;
+    sleep_seconds: number | null;
+    restful_sleep_seconds: number | null;
   }[];
 
-  return rows.map((r) => ({
-    dateUtc: r.date_utc,
-    date: new Date(r.date_utc * 1000).toISOString().slice(0, 10),
-    totalSeconds: r.sleep_seconds ?? 0,
-    deepSeconds: r.restful_sleep_seconds ?? 0,
-  }));
+  const map = new Map<string, FirmwareDay>();
+  for (const r of rows) {
+    const date = new Date(r.date_utc * 1000).toISOString().slice(0, 10);
+    map.set(date, {
+      date,
+      sleep: r.sleep_seconds ?? 0,
+      restful: r.restful_sleep_seconds ?? 0,
+      endUtc: r.date_utc + 86400,
+    });
+  }
+  return map;
+}
+
+export function getSleepTimeline(): SleepNight[] {
+  const phases = getPebbleDb()
+    .prepare(
+      `SELECT activity, time_start_utc, time_end_utc
+       FROM activity_phases
+       WHERE activity IN ('sleep', 'restful_sleep')
+       ORDER BY time_start_utc ASC`
+    )
+    .all() as { activity: string; time_start_utc: number; time_end_utc: number }[];
+
+  const byNight = new Map<string, { sleep: number[][]; rest: number[][] }>();
+  for (const p of phases) {
+    const key = nightKeyFor(p.time_start_utc);
+    if (!key) continue;
+    const bucket = byNight.get(key) ?? { sleep: [], rest: [] };
+    if (p.activity === "sleep") bucket.sleep.push([p.time_start_utc, p.time_end_utc]);
+    else bucket.rest.push([p.time_start_utc, p.time_end_utc]);
+    byNight.set(key, bucket);
+  }
+
+  const firmware = getFirmwareDays();
+  const consumedFirmware = new Set<string>();
+  const nights: SleepNight[] = [];
+
+  for (const [date, bucket] of byNight) {
+    if (bucket.sleep.length === 0) continue;
+    const start = Math.min(...bucket.sleep.map(([s]) => s));
+    const end = Math.max(...bucket.sleep.map(([, e]) => e));
+    const asleep = bucket.sleep.reduce((t, [s, e]) => t + (e - s), 0);
+    const inBed = end - start;
+    const deep = bucket.rest.reduce(
+      (t, [s, e]) => (s >= start && e <= end ? t + (e - s) : t),
+      0
+    );
+    // Firmware row covering the night's start (UTC day) — comparison only.
+    const utcKey = new Date(start * 1000).toISOString().slice(0, 10);
+    const fw = firmware.get(utcKey);
+    if (fw) consumedFirmware.add(utcKey);
+    nights.push({
+      dateUtc: localMidnightEpoch(date),
+      date,
+      totalSeconds: Math.round(asleep),
+      deepSeconds: Math.round(deep),
+      source: "events",
+      inBedSeconds: Math.round(inBed),
+      awakeSeconds: Math.round(Math.max(0, inBed - asleep)),
+      watchTotalSeconds: fw ? fw.sleep : null,
+    });
+  }
+
+  // Nights with no phases at all → firmware aggregate, labeled as such. Rows
+  // whose UTC day is still running locally are partial, so they're skipped.
+  const nowUtc = Math.floor(Date.now() / 1000);
+  for (const [utcKey, fw] of firmware) {
+    if (consumedFirmware.has(utcKey) || fw.sleep <= 0 || fw.endUtc > nowUtc) continue;
+    nights.push({
+      dateUtc: localMidnightEpoch(utcKey),
+      date: utcKey,
+      totalSeconds: fw.sleep,
+      deepSeconds: fw.restful,
+      source: "watch",
+      inBedSeconds: null,
+      awakeSeconds: null,
+      watchTotalSeconds: fw.sleep,
+    });
+  }
+
+  return nights.sort((a, b) => a.dateUtc - b.dateUtc);
 }
 
 export interface SleepDetailDay extends SleepNight {
-  // Time-in-bed (sum of detected `sleep` phase durations for that day).
-  // Derived awake = phaseSeconds - totalSeconds. Null when the watch hasn't
-  // synced any sleep phase for that day (older days only have daily_summary).
+  // Time in bed = first `sleep` phase start → last `sleep` phase end for the night.
+  // Null when the watch hasn't synced any sleep phase for that night.
   phaseSeconds: number | null;
-  awakeSeconds: number | null;
 }
 
 export function getSleepDetail(): SleepDetailDay[] {
-  const timeline = getSleepTimeline();
-  const phases = getPebbleDb()
-    .prepare(
-      `SELECT time_start_utc, time_end_utc
-       FROM activity_phases
-       WHERE activity = 'sleep'
-       ORDER BY time_start_utc ASC`
-    )
-    .all() as { time_start_utc: number; time_end_utc: number }[];
-
-  // Map each sleep phase to the UTC day its start falls in. For a normal
-  // overnight sleep in PDT this equals the wake-up morning (same day the
-  // daily_summary row is keyed to).
-  const phaseByDay = new Map<string, number>();
-  for (const p of phases) {
-    const day = new Date(p.time_start_utc * 1000).toISOString().slice(0, 10);
-    const dur = p.time_end_utc - p.time_start_utc;
-    phaseByDay.set(day, (phaseByDay.get(day) ?? 0) + dur);
-  }
-
-  return timeline.map((n) => {
-    const phaseSeconds = phaseByDay.get(n.date) ?? null;
-    const awakeSeconds =
-      phaseSeconds != null ? Math.max(0, phaseSeconds - n.totalSeconds) : null;
-    return { ...n, phaseSeconds, awakeSeconds };
-  });
+  return getSleepTimeline().map((n) => ({
+    ...n,
+    phaseSeconds: n.inBedSeconds,
+  }));
 }
 
 export interface HourlySleep {

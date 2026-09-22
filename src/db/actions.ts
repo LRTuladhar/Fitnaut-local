@@ -193,6 +193,8 @@ export async function upsertDayNote(input: {
   userId: string;
   date: string;
   note: string;
+  /** "everywhere" (default) | "nutrition" — see src/lib/dayNotes.ts */
+  scope?: string;
 }) {
   const existing = db
     .select({ id: schema.dayNotes.id })
@@ -208,7 +210,10 @@ export async function upsertDayNote(input: {
   if (existing) {
     return db
       .update(schema.dayNotes)
-      .set({ note: input.note })
+      .set({
+        note: input.note,
+        ...(input.scope ? { scope: input.scope } : {}),
+      })
       .where(eq(schema.dayNotes.id, existing.id))
       .returning()
       .get();
@@ -221,6 +226,7 @@ export async function upsertDayNote(input: {
       user_id: input.userId,
       date: input.date,
       note: input.note,
+      scope: input.scope ?? "everywhere",
     })
     .returning()
     .get();

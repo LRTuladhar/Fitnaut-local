@@ -9,7 +9,9 @@ import { MEAL_TYPES, type MealType, DAILY_CALORIE_TARGET } from "@/lib/constants
 import { useCurrentUser } from "@/components/CurrentUserProvider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDayNotes } from "@/hooks/useDayNotes";
-import { NoteMarkers } from "@/components/NoteMarkers";
+import { useGolfDays } from "@/hooks/useGolfDays";
+import { NoteMarkers, type DayNote } from "@/components/NoteMarkers";
+import { noteShowsOn } from "@/lib/dayNotes";
 
 const COLUMN_WIDTH = 24;
 const MAX_DAYS = 90;
@@ -170,9 +172,26 @@ export default function CalorieTimeline({ showNotes = false }: { showNotes?: boo
   );
 
   const noteDates = useMemo(() => new Set(chartData.map((d) => d.date)), [chartData]);
+
+  // Golf days are auto-marked on the nutrition charts only, and only for days
+  // that actually have food logged.
+  const golfDays = useGolfDays();
+  const mealDays = useMemo(() => new Set(totalsByDay.keys()), [totalsByDay]);
+  const golfNotes = useMemo<DayNote[]>(
+    () =>
+      [...golfDays]
+        .filter((d) => noteDates.has(d) && mealDays.has(d))
+        .sort()
+        .map((d) => ({ id: `golf-${d}`, date: d, note: "Golf", scope: "nutrition" })),
+    [golfDays, noteDates, mealDays]
+  );
+
   const visibleNotes = useMemo(
-    () => notes.filter((n) => noteDates.has(n.date)),
-    [notes, noteDates]
+    () => [
+      ...notes.filter((n) => noteDates.has(n.date) && noteShowsOn(n.scope, "nutrition")),
+      ...golfNotes,
+    ],
+    [notes, noteDates, golfNotes]
   );
 
   const [visibleStartIdx, setVisibleStartIdx] = useState(0);

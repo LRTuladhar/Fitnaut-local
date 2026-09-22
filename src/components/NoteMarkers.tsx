@@ -1,15 +1,16 @@
 "use client";
 
 import { ReferenceLine } from "recharts";
+import { NOTE_SCOPE_COLOR, normalizeNoteScope } from "@/lib/dayNotes";
 
 export interface DayNote {
   id: string;
   date: string;
   note: string;
+  /** Which charts this note belongs on — see src/lib/dayNotes.ts */
+  scope?: string;
 }
 
-// Dashed marker line + label color.
-const NOTE_LINE_COLOR = "#f59e0b";
 // Vertical gap (px) between successive stagger lanes.
 const NOTE_STAGGER_STEP_PX = 16;
 // Rough rendered width per character at fontSize 10 (px).
@@ -70,23 +71,26 @@ export function NoteMarkers({
   const lanes = assignLanes(notes, dayWidthPx);
   return (
     <>
-      {notes.map((n, i) => (
-        <ReferenceLine
-          key={n.id}
-          x={resolveX(n.date)}
-          stroke={NOTE_LINE_COLOR}
-          strokeDasharray="4 4"
-          strokeOpacity={0.8}
-          strokeWidth={1.5}
-          label={{
-            value: n.note,
-            position: "insideTop",
-            offset: 6 + lanes[i] * NOTE_STAGGER_STEP_PX,
-            fill: NOTE_LINE_COLOR,
-            fontSize: 10,
-          }}
-        />
-      ))}
+      {notes.map((n, i) => {
+        const color = NOTE_SCOPE_COLOR[normalizeNoteScope(n.scope)];
+        return (
+          <ReferenceLine
+            key={n.id}
+            x={resolveX(n.date)}
+            stroke={color}
+            strokeDasharray="4 4"
+            strokeOpacity={0.8}
+            strokeWidth={1.5}
+            label={{
+              value: n.note,
+              position: "insideTop",
+              offset: 6 + lanes[i] * NOTE_STAGGER_STEP_PX,
+              fill: color,
+              fontSize: 10,
+            }}
+          />
+        );
+      })}
     </>
   );
 }

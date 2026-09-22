@@ -3,12 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  ComposedChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, ReferenceArea, BarChart, Bar, Legend, ReferenceLine, Area,
 } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDayNotes } from "@/hooks/useDayNotes";
 import { NoteMarkers } from "@/components/NoteMarkers";
+import { noteShowsOn } from "@/lib/dayNotes";
 
 // High-HR (exercise) highlight threshold, in bpm.
 const HR_HIGHLIGHT_THRESHOLD = 100;
@@ -64,8 +65,19 @@ const STEPS_RANGES: StepsRange[] = [
 type DailyStepsRow = { dateUtc: number; date: string; steps: number };
 
 type HrPoint = { t: number; hr: number };
-type SleepNight = { dateUtc: number; date: string; totalSeconds: number; deepSeconds: number };
-type SleepDetailDay = SleepNight & { awakeSeconds: number | null };
+type SleepNight = {
+  dateUtc: number;
+  date: string;
+  totalSeconds: number; // ASLEEP seconds (phase-based when phases exist)
+  deepSeconds: number;
+  // Present on the phase-based nights (source "events"); null on firmware
+  // fallback nights, which have no per-night events to derive them from.
+  source?: "events" | "watch";
+  inBedSeconds?: number | null;
+  awakeSeconds?: number | null;
+  watchTotalSeconds?: number | null;
+};
+type SleepDetailDay = SleepNight;
 type HourlySleep = { t: number; asleepSeconds: number; deepSeconds: number };
 
 type PebbleData = {
@@ -220,6 +232,13 @@ function buildHrRows(
 type Hr24hMode = "band" | "dots";
 const HR_24H_MODE: Hr24hMode = "band";
 
+// Heart-rate chart area fill: a SOLID colour (no gradient) under the mean line
+// in the 24h band view, and under the hourly line in 7d/30d. HR_AREA_FILL_OPACITY
+// is the only knob — lower it if the red exercise shading underneath reads too
+// muddy, raise it for more bulk.
+const HR_AREA_FILL = "#22c55e";
+const HR_AREA_FILL_OPACITY = 0.3;
+
 // Rolling-window smoothing for the 24h HR band.
 const HR_SMOOTH_WINDOW_MS = 15 * 60 * 1000; // ±15 min
 const HR_SMOOTH_GAP_MS = 45 * 60 * 1000;    // break after 45 min with no reading
@@ -232,6 +251,11 @@ type HrSmoothPoint = {
   max: number | null;
   range: number | null;
 };
+
+// The 24h band rows, plus `gap`: the dashed "no data" bridge value. Null
+// everywhere except across a hole, where it carries HR_GAP_ASSUMED_BPM so the
+// dash reads as a flat resting-HR line (same convention as the 7d bridges).
+type HrBandPoint = HrSmoothPoint & { gap: number | null };
 
 // Turns sparse minute readings into a smoothed {mean, min, max} series, with a
 // null row where a gap > HR_SMOOTH_GAP_MS breaks the line/band — so overnight
@@ -262,6 +286,30 @@ function smoothHr(points: { t: number; hr: number }[]): HrSmoothPoint[] {
       if (v > hi) hi = v;
     }
     out.push({ t: p.t, mean: sum / n, min: lo, max: hi, range: hi - lo });
+  }
+  return out;
+}
+
+// 24h view: give every hole the same amber dashed bridge the 7d chart draws —
+// the band/area simply stops, which reads as "nothing happened" when in fact the
+// watch wasn't recording (overnight, charging, off-wrist). The dash carries the
+// assumed resting HR, and only the tooltip's real readings are ever reported.
+// Holes longer than HR_GAP_BRIDGE_MAX_MIN (24h) deliberately stay whitespace:
+// that's a whole day without the watch, not a resting stretch.
+function addSmoothBridges(rows: HrSmoothPoint[], breakMin = HR_GAP_BREAK_MIN): HrBandPoint[] {
+  const out: HrBandPoint[] = rows.map((r) => ({ ...r, gap: null }));
+  let prevValueIdx = -1;
+  for (let i = 0; i < out.length; i++) {
+    if (out[i].mean == null) continue;
+    if (prevValueIdx >= 0) {
+      const gapMin = (out[i].t - out[prevValueIdx].t) / 60_000;
+      if (gapMin > breakMin && gapMin <= HR_GAP_BRIDGE_MAX_MIN) {
+        // Span the whole hole, including the null marker rows in between, so
+        // connectNulls={false} still has an unbroken run of bridge values.
+        for (let k = prevValueIdx; k <= i; k++) out[k].gap = HR_GAP_ASSUMED_BPM;
+      }
+    }
+    prevValueIdx = i;
   }
   return out;
 }
@@ -322,8 +370,19 @@ function SleepTooltip({ active, payload, label }: any) {
         <p key={p.dataKey} style={{ margin: 0, color: p.color ?? "#fff" }}>{p.name}: {p.value} h</p>
       ))}
       <p style={{ margin: 0, marginTop: 4, paddingTop: 4, borderTop: "1px solid rgba(255,255,255,0.12)", fontWeight: 600 }}>
-        Total: {total} h
+        Asleep: {total} h
       </p>
+      {row?.inBedSeconds != null && (
+        <p style={{ margin: 0, fontWeight: 600 }}>In bed: {hours(row.inBedSeconds)} h</p>
+      )}
+      {row?.awakeSeconds != null && (
+        <p style={{ margin: 0, fontWeight: 600 }}>Awake: {hours(row.awakeSeconds)} h</p>
+      )}
+      {row?.source === "watch" && (
+        <p style={{ margin: 0, marginTop: 2, fontSize: 10, color: "#8a8a8e" }}>
+          watch total — no sleep events synced
+        </p>
+      )}
     </div>
   );
 }
@@ -396,11 +455,14 @@ export default function PebbleTab({ showNotes = false }: { showNotes?: boolean }
       rows: buildHrRows(series, split.segments, split.bridges),
       segments: split.segments,
       bridges: split.bridges,
-      smooth: is24h ? smoothHr(raw) : [],
+      smooth: is24h ? addSmoothBridges(smoothHr(raw), HR_SMOOTH_GAP_MS / 60_000) : [],
       from,
       to,
       ticks: makeTicks(from, to, is24h),
-      runs: highHrRuns(raw),
+      // Exercise shading is detected on the RAW minute readings for every
+      // range: hourly means rarely clear HR_HIGHLIGHT_THRESHOLD, so feeding them
+      // (as this used to) left 7d/30d with no red blocks at all.
+      runs: highHrRuns(minute),
       width,
       shortLabels: is24h,
     };
@@ -483,9 +545,12 @@ export default function PebbleTab({ showNotes = false }: { showNotes?: boolean }
   }, [data, stepsRange]);
 
   // Note overlays. Sub-24h views (HR 24h, Sleep hourly) deliberately skip notes.
+  // Only general notes appear here — nutrition-scoped markers (golf days) are
+  // exclusive to the Calories / Nutrition charts.
   const hrNotes = useMemo(() => {
     if (!showNotes || is24h) return [];
     return notes.filter((n) => {
+      if (!noteShowsOn(n.scope, "everywhere")) return false;
       const ts = noteTs(n.date);
       return ts >= hrChart.from && ts <= hrChart.to;
     });
@@ -494,13 +559,13 @@ export default function PebbleTab({ showNotes = false }: { showNotes?: boolean }
   const sleepNotes = useMemo(() => {
     if (!showNotes || isHourly) return [];
     const labels = new Set(sleepChart.bars.map((b) => b.label));
-    return notes.filter((n) => labels.has(fmtNight(n.date)));
+    return notes.filter((n) => noteShowsOn(n.scope, "everywhere") && labels.has(fmtNight(n.date)));
   }, [notes, showNotes, isHourly, sleepChart]);
 
   const stepsNotes = useMemo(() => {
     if (!showNotes) return [];
     const labels = new Set(stepsChart.bars.map((b) => b.label));
-    return notes.filter((n) => labels.has(fmtNight(n.date)));
+    return notes.filter((n) => noteShowsOn(n.scope, "everywhere") && labels.has(fmtNight(n.date)));
   }, [notes, showNotes, stepsChart]);
 
   // Start the steps chart at the latest (right) edge so today is visible on load.
@@ -542,7 +607,7 @@ export default function PebbleTab({ showNotes = false }: { showNotes?: boolean }
   return (
     <div className="px-5 pb-8 space-y-6">
       {/* ── Heart Rate ─────────────────────────────────────────────── */}
-      <Section title="Heart Rate" subtitle={`High heart-rate (exercise) periods shaded · dashed line = no readings, drawn at resting HR (~${HR_GAP_ASSUMED_BPM} bpm) (7d)`}>
+      <Section title="Heart Rate" subtitle={`High heart-rate (exercise) periods shaded · dashed line = no readings (24h >45m, 7d >1h), drawn at resting HR (~${HR_GAP_ASSUMED_BPM} bpm)`}>
         <div className="flex bg-secondary rounded-xl p-1 gap-1 mb-4">
           {HR_RANGES.map((r, i) => (
             <button key={r.label} onClick={() => setRangeIdx(i)}
@@ -556,7 +621,7 @@ export default function PebbleTab({ showNotes = false }: { showNotes?: boolean }
           <div className="overflow-x-auto -mx-4 px-4" ref={scrollRef}>
             <div style={{ width: hrChart.width, minWidth: "100%" }}>
               <ResponsiveContainer width="100%" height={180}>
-                <LineChart data={(is24h && HR_24H_MODE === "band" ? hrChart.smooth : is24h ? hrChart.points : hrChart.rows) as any}
+                <ComposedChart data={(is24h && HR_24H_MODE === "band" ? hrChart.smooth : is24h ? hrChart.points : hrChart.rows) as any}
                   margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                   <XAxis dataKey="t" type="number" scale="time" domain={[hrChart.from, hrChart.to]}
@@ -570,12 +635,22 @@ export default function PebbleTab({ showNotes = false }: { showNotes?: boolean }
                   ))}
                   {is24h && HR_24H_MODE === "band" ? (
                     <>
+                      {/* NOTE: Area only renders inside AreaChart/ComposedChart
+                          (recharts returns null in a LineChart), hence the
+                          ComposedChart above. */}
                       <Area dataKey="min" stackId="hr-band" stroke="none" fill="transparent"
                         connectNulls={false} isAnimationActive={false} />
-                      <Area dataKey="range" stackId="hr-band" stroke="none" fill="#22c55e"
-                        fillOpacity={0.15} connectNulls={false} isAnimationActive={false} />
-                      <Line dataKey="mean" stroke="#22c55e" strokeWidth={1.5} dot={false}
+                      <Area dataKey="range" stackId="hr-band" stroke="none" fill={HR_AREA_FILL}
+                        fillOpacity={0.12} connectNulls={false} isAnimationActive={false} />
+                      {/* Solid fill under the mean line — a gradient read as a
+                          haze rather than a shape. Tune opacity with
+                          HR_AREA_FILL_OPACITY (1 = fully opaque). */}
+                      <Area dataKey="mean" stroke={HR_AREA_FILL} strokeWidth={1.5} dot={false}
+                        fill={HR_AREA_FILL} fillOpacity={HR_AREA_FILL_OPACITY}
                         connectNulls={false} name="Heart Rate" isAnimationActive={false} />
+                      <Line dataKey="gap" stroke="#f59e0b" strokeWidth={1.5}
+                        strokeDasharray="4 4" dot={false} connectNulls={false}
+                        name="No data (>45m)" legendType="none" isAnimationActive={false} />
                     </>
                   ) : is24h ? (
                     <Line dataKey="hr" stroke="none" dot={{ r: 1.5, fill: "#22c55e", strokeWidth: 0 }}
@@ -583,9 +658,14 @@ export default function PebbleTab({ showNotes = false }: { showNotes?: boolean }
                       name="Heart Rate" isAnimationActive={false} />
                   ) : (
                     <>
+                      {/* 7d/30d: same solid area treatment as the 24h band, but
+                          per contiguous segment — one Area each, so no fill is
+                          ever drawn across a data hole. */}
                       {hrChart.segments.map((_, i) => (
-                        <Line key={`seg-${i}`} type="monotone" dataKey={`s${i}`} stroke="#22c55e"
-                          strokeWidth={1.5} dot={false} connectNulls={false}
+                        <Area key={`seg-${i}`} type="monotone" dataKey={`s${i}`}
+                          stroke={HR_AREA_FILL} strokeWidth={1.5} dot={false}
+                          fill={HR_AREA_FILL} fillOpacity={HR_AREA_FILL_OPACITY}
+                          connectNulls={false}
                           name="Heart Rate" legendType="none" isAnimationActive={false} />
                       ))}
                       {hrChart.bridges.map((_, i) => (
@@ -598,7 +678,7 @@ export default function PebbleTab({ showNotes = false }: { showNotes?: boolean }
                   {!is24h && hrNotes.length > 0 && (
                     <NoteMarkers notes={hrNotes} resolveX={(d) => noteTs(d)} dayWidthPx={24 * range.pxPerHour} />
                   )}
-                </LineChart>
+                </ComposedChart>
               </ResponsiveContainer>
             </div>
           </div>

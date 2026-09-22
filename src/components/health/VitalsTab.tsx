@@ -16,6 +16,7 @@ import {
 import { PageSkeleton } from "@/components/ui/skeleton";
 import { useDayNotes } from "@/hooks/useDayNotes";
 import { NoteMarkers, type DayNote } from "@/components/NoteMarkers";
+import { noteShowsOn } from "@/lib/dayNotes";
 
 type Metric = "weight" | "bp";
 type Range = "week" | "month" | "3months" | "year";
@@ -115,6 +116,7 @@ export default function VitalsTab({ showNotes = false }: { showNotes?: boolean }
     const minTs = Math.min(...chartData.map((d) => d.ts));
     const maxTs = Math.max(...chartData.map((d) => d.ts));
     return notes.filter((n) => {
+      if (!noteShowsOn(n.scope, "everywhere")) return false;
       const ts = parseLocalDate(n.date).getTime();
       return ts >= minTs && ts <= maxTs;
     });
@@ -230,8 +232,8 @@ function TrendChart({ data, metric, notes, dayWidthPx }: { data: any[]; metric: 
           <YAxis tick={{ fontSize: 10, fill: "#888" }} domain={["auto", "auto"]} />
           <Tooltip contentStyle={{ background: "#1c1c1e", border: "none", borderRadius: 8, fontSize: 12 }}
             labelFormatter={(v: any) => formatChartDate(v)} />
-          <Line type="monotone" dataKey="systolic"  stroke="#a855f7" strokeWidth={2} dot={false} name="Systolic"  connectNulls />
-          <Line type="monotone" dataKey="diastolic" stroke="#ec4899" strokeWidth={2} dot={false} name="Diastolic" connectNulls />
+          <Line type="monotone" dataKey="systolic"  stroke="#a855f7" strokeWidth={2} dot={{ r: 3, fill: "#a855f7" }} name="Systolic"  connectNulls />
+          <Line type="monotone" dataKey="diastolic" stroke="#ec4899" strokeWidth={2} dot={{ r: 3, fill: "#ec4899" }} name="Diastolic" connectNulls />
           {notes.length > 0 && <NoteMarkers notes={notes} resolveX={(d) => parseLocalDate(d).getTime()} dayWidthPx={dayWidthPx} />}
         </LineChart>
       </ResponsiveContainer>

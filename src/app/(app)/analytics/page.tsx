@@ -31,6 +31,7 @@ import { PageSkeleton } from "@/components/ui/skeleton";
 import { useDayNotes } from "@/hooks/useDayNotes";
 import { NoteMarkers } from "@/components/NoteMarkers";
 import { NotesToggle } from "@/components/NotesToggle";
+import { noteShowsOn } from "@/lib/dayNotes";
 
 type Range = "week" | "month" | "year" | "all";
 const RANGES: { label: string; value: Range }[] = [
@@ -73,7 +74,9 @@ export default function AnalyticsPage() {
   );
   const volumeNotes = useMemo(() => {
     const dates = new Set(volumeData.map((d) => d.date));
-    return notes.filter((n) => dates.has(n.date));
+    // Workout volume chart: general notes only — nutrition-scoped markers
+    // (golf days etc.) belong on the Calories / Nutrition charts.
+    return notes.filter((n) => dates.has(n.date) && noteShowsOn(n.scope, "everywhere"));
   }, [notes, volumeData]);
   const typeData = useMemo(() => getTypeDistribution(exercises, definitions), [exercises, definitions]);
   const muscleData = useMemo(() => getMuscleGroupActivity(exercises, definitions).slice(0, 8), [exercises, definitions]);

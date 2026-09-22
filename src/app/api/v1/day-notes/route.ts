@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
   const userId = await resolveUserId(request, body.user_id);
-  const { date, note } = body;
+  const { date, note, scope } = body;
 
   if (typeof date !== "string" || !DATE_RE.test(date)) {
     return Response.json(
@@ -36,7 +36,16 @@ export async function POST(request: NextRequest) {
     return Response.json({ ok: false, error: "note is required" }, { status: 400 });
   }
 
-  const result = await upsertDayNote({ userId, date, note: note.trim() });
+  // scope is optional: "everywhere" (default, all charts) | "nutrition"
+  // (Calories / Nutrition charts only).
+  if (scope !== undefined && scope !== "everywhere" && scope !== "nutrition") {
+    return Response.json(
+      { ok: false, error: 'scope must be "everywhere" or "nutrition"' },
+      { status: 400 }
+    );
+  }
+
+  const result = await upsertDayNote({ userId, date, note: note.trim(), scope });
   return Response.json({ ok: true, data: result });
 }
 

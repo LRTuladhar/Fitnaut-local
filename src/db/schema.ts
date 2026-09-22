@@ -54,6 +54,10 @@ export const dayNotes = sqliteTable(
     user_id: text("user_id").notNull(),
     date: text("date").notNull(),
     note: text("note").notNull(),
+    // Which charts this note belongs to:
+    //   "everywhere" — shows on every chart that has note overlays on (default)
+    //   "nutrition"  — shows ONLY on the Calories / Nutrition charts
+    scope: text("scope").notNull().default("everywhere"),
   },
   (table) => [uniqueIndex("day_notes_user_date_idx").on(table.user_id, table.date)]
 );

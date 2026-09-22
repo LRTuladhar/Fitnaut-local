@@ -9,6 +9,8 @@ export interface DayNote {
   user_id: string;
   date: string;
   note: string;
+  /** "everywhere" (default) | "nutrition" — see src/lib/dayNotes.ts */
+  scope?: string;
 }
 
 export function useDayNotes() {
