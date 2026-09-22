@@ -232,7 +232,8 @@
         "chest",
         "triceps",
         "shoulders"
-      ]
+      ],
+      "loadMultiplier": 2
     },
     {
       "name": "Overhead Press",
@@ -279,7 +280,8 @@
       "bodyParts": [
         "shoulders",
         "triceps"
-      ]
+      ],
+      "loadMultiplier": 2
     },
     {
       "name": "Barbell Row",
@@ -325,6 +327,31 @@
       "bodyParts": [
         "back",
         "biceps"
+      ],
+      "loadMultiplier": 2
+    },
+    {
+      "name": "Seated Cable Row",
+      "alternateNames": [
+        "cable row",
+        "cable rows",
+        "seated row",
+        "seated rows",
+        "cable row machine"
+      ],
+      "type": "strength",
+      "muscleGroups": [
+        "back",
+        "arms"
+      ],
+      "category": "compound",
+      "expectedParameters": [
+        "reps",
+        "weight"
+      ],
+      "bodyParts": [
+        "back",
+        "biceps"
       ]
     },
     {
@@ -348,7 +375,8 @@
       "bodyParts": [
         "back",
         "biceps"
-      ]
+      ],
+      "bodyweightFactor": 1.0
     },
     {
       "name": "Chin-up",
@@ -446,6 +474,7 @@
         "split squat",
         "rear foot elevated split squat"
       ],
+      "loadMultiplier": 2,
       "type": "strength",
       "muscleGroups": [
         "legs",
@@ -546,7 +575,12 @@
       "alternateNames": [
         "hip thrusts",
         "barbell hip thrust",
-        "glute bridge"
+        "glute bridge",
+        "glute drive",
+        "glute drive machine",
+        "hip thrust machine",
+        "hip thruster",
+        "glute bridge machine"
       ],
       "type": "strength",
       "muscleGroups": [
@@ -561,6 +595,49 @@
       "bodyParts": [
         "glutes"
       ]
+    },
+    {
+      "name": "Hip Abduction",
+      "alternateNames": [
+        "abduction machine",
+        "outer thigh",
+        "hip abductor",
+        "abductor machine",
+        "outer thigh machine"
+      ],
+      "type": "strength",
+      "muscleGroups": [
+        "glutes",
+        "legs"
+      ],
+      "category": "isolation",
+      "expectedParameters": [
+        "reps",
+        "weight"
+      ],
+      "bodyParts": [
+        "glutes"
+      ]
+    },
+    {
+      "name": "Hip Adduction",
+      "alternateNames": [
+        "adduction machine",
+        "inner thigh",
+        "hip adductor",
+        "adductor machine",
+        "inner thigh machine"
+      ],
+      "type": "strength",
+      "muscleGroups": [
+        "legs"
+      ],
+      "category": "isolation",
+      "expectedParameters": [
+        "reps",
+        "weight"
+      ],
+      "bodyParts": []
     },
     {
       "name": "Bicep Curl",
@@ -602,7 +679,8 @@
       ],
       "bodyParts": [
         "biceps"
-      ]
+      ],
+      "loadMultiplier": 2
     },
     {
       "name": "Preacher Curl",
@@ -700,7 +778,8 @@
       ],
       "bodyParts": [
         "shoulders"
-      ]
+      ],
+      "loadMultiplier": 2
     },
     {
       "name": "Front Raise",
@@ -719,7 +798,8 @@
       ],
       "bodyParts": [
         "shoulders"
-      ]
+      ],
+      "loadMultiplier": 2
     },
     {
       "name": "Shoulder Rotation Internal",
@@ -782,7 +862,8 @@
       "bodyParts": [
         "shoulders",
         "back"
-      ]
+      ],
+      "loadMultiplier": 2
     },
     {
       "name": "Face Pull",
@@ -834,7 +915,11 @@
         "chest flys",
         "dumbbell fly",
         "cable fly",
-        "pec fly"
+        "pec fly",
+        "flyes",
+        "flye",
+        "fly",
+        "dumbbell flyes"
       ],
       "type": "strength",
       "muscleGroups": [
@@ -847,7 +932,8 @@
       ],
       "bodyParts": [
         "chest"
-      ]
+      ],
+      "loadMultiplier": 2
     },
     {
       "name": "Cable Crossover",
@@ -890,7 +976,8 @@
         "chest",
         "triceps",
         "shoulders"
-      ]
+      ],
+      "bodyweightFactor": 0.65
     },
     {
       "name": "Plank",
@@ -963,7 +1050,8 @@
       ],
       "bodyParts": [
         "abs"
-      ]
+      ],
+      "bodyweightFactor": 0.25
     },
     {
       "name": "Russian Twist",
@@ -1000,7 +1088,8 @@
       ],
       "bodyParts": [
         "abs"
-      ]
+      ],
+      "bodyweightFactor": 0.35
     },
     {
       "name": "Cable Crunch",
@@ -1716,6 +1805,44 @@
       "category": null,
       "expectedParameters": [
         "duration"
+      ],
+      "bodyParts": []
+    },
+    {
+      "name": "Resistance Band Training",
+      "alternateNames": [
+        "resistance bands",
+        "resistance band",
+        "band training",
+        "band workout",
+        "bands"
+      ],
+      "type": "strength",
+      "muscleGroups": [
+        "fullBody"
+      ],
+      "category": "compound",
+      "expectedParameters": [
+        "duration",
+        "reps"
+      ],
+      "bodyParts": []
+    },
+    {
+      "name": "Steps",
+      "alternateNames": [
+        "step count",
+        "daily steps",
+        "walking steps",
+        "step"
+      ],
+      "type": "cardio",
+      "muscleGroups": [
+        "legs"
+      ],
+      "category": null,
+      "expectedParameters": [
+        "reps"
       ],
       "bodyParts": []
     }
